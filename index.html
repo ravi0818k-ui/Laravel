@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 – Premium PG Accommodation in Gurugram</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #faf6f0;
+      --warm: #f2ebe0;
+      --sand: #e8d8c4;
+      --amber: #c8813a;
+      --amber2: #e09a50;
+      --dark: #1a1410;
+      --charcoal: #3d3028;
+      --mid: #7a6655;
+      --light: #b8a898;
+      --white: #ffffff;
+      --shadow: 0 4px 32px rgba(26,20,16,.10);
+      --shadow2: 0 12px 48px rgba(26,20,16,.18);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(250,246,240,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--sand);
+      padding: 0 5vw;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      font-family: 'Roboto', sans-serif;
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--dark);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .nav-logo span { color: var(--amber); }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a {
+      text-decoration: none; font-size: .88rem; font-weight: 500;
+      color: var(--mid); letter-spacing: .04em; text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--amber); }
+    .nav-cta {
+      background: var(--amber); color: var(--white) !important;
+      padding: .45rem 1.2rem; border-radius: 4px;
+      transition: background .2s !important;
+    }
+    .nav-cta:hover { background: var(--amber2) !important; color: var(--white) !important; }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none; cursor: pointer; flex-direction: column;
+      gap: 5px; padding: 5px;
+    }
+    .hamburger span {
+      display: block; width: 24px; height: 2.5px;
+      background: var(--dark); border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .hamburger.active span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--cream); border-bottom: 1px solid var(--sand);
+      padding: 1.5rem 5vw; z-index: 99;
+      flex-direction: column; gap: 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,.1);
+    }
+    .mobile-menu.active { display: flex; }
+    .mobile-menu a {
+      text-decoration: none; font-size: 1rem; font-weight: 500;
+      color: var(--charcoal); padding: .6rem 0;
+      border-bottom: 1px solid var(--sand);
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: var(--amber); }
+
+    /* ── HERO ── */
+    .hero {
+      height: 100vh; min-height: 600px;
+      position: relative; overflow: hidden;
+      display: flex; align-items: flex-end;
+      cursor: pointer;
+    }
+    .hero-slides {
+      position: absolute; inset: 0;
+    }
+    .hero-slide {
+      position: absolute; inset: 0;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    .hero-slide.active {
+      opacity: 1;
+    }
+    .hero-slide img {
+      width: 100%; height: 100%; object-fit: cover;
+      animation: kenBurns 5s ease forwards;
+    }
+    .hero-slide.active img {
+      animation: kenBurns 5s ease forwards;
+    }
+    @keyframes kenBurns {
+      from { transform: scale(1.08); }
+      to   { transform: scale(1.0); }
+    }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(26,20,16,.85) 0%, rgba(26,20,16,.4) 50%, rgba(26,20,16,.2) 100%);
+      z-index: 1;
+    }
+    .hero-slide-label {
+      position: absolute; bottom: 24px; right: 24px;
+      background: rgba(0,0,0,.7); color: var(--white);
+      padding: .5rem 1rem; border-radius: 6px;
+      font-size: .82rem; font-weight: 500;
+      z-index: 3; opacity: 0;
+      transition: opacity .6s .4s ease;
+      pointer-events: none;
+    }
+    .hero-slide.active .hero-slide-label { opacity: 1; }
+    .hero-dots {
+      position: absolute; bottom: 28px; left: 50%;
+      transform: translateX(-50%); z-index: 3;
+      display: flex; gap: 8px;
+    }
+    .hero-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,.4); border: none;
+      cursor: pointer; transition: background .3s, transform .3s;
+    }
+    .hero-dot.active { background: var(--amber); transform: scale(1.3); }
+    .hero-content {
+      position: relative; z-index: 2;
+      padding: 0 8vw 7vh;
+      max-width: 720px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--amber); color: var(--white);
+      font-size: .75rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      padding: .35rem .9rem; border-radius: 2px;
+      margin-bottom: 1.2rem;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 5.5vw, 4rem);
+      font-weight: 900; color: var(--white);
+      line-height: 1.1; letter-spacing: -.02em;
+      margin-bottom: 1rem;
+      animation: fadeUp .6s .12s ease both;
+    }
+    .hero-sub {
+      font-size: 1.05rem; color: rgba(255,255,255,.75); font-weight: 300;
+      margin-bottom: 2rem;
+      animation: fadeUp .6s .22s ease both;
+    }
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; animation: fadeUp .6s .32s ease both; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--amber); color: var(--white);
+      padding: .8rem 1.8rem; border-radius: 4px;
+      font-size: .92rem; font-weight: 600; text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--amber2); transform: translateY(-2px); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: .5rem;
+      border: 1.5px solid rgba(255,255,255,.6); color: var(--white);
+      padding: .8rem 1.8rem; border-radius: 4px;
+      font-size: .92rem; font-weight: 500; text-decoration: none;
+      transition: border-color .2s, background .2s;
+    }
+    .btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,.1); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      background: var(--dark); color: var(--white);
+      padding: 2rem 8vw;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1.5rem;
+      text-align: center;
+    }
+    .stat-item .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem; font-weight: 900; color: var(--amber);
+    }
+    .stat-item .stat-label {
+      font-size: .75rem; color: rgba(255,255,255,.5);
+      text-transform: uppercase; letter-spacing: .1em; margin-top: .3rem;
+    }
+
+    /* ── SECTION COMMON ── */
+    section { padding: 5rem 8vw; }
+    .section-label {
+      font-size: .75rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--amber); margin-bottom: .8rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 700; line-height: 1.2; color: var(--dark);
+    }
+    .section-desc {
+      font-size: 1rem; color: var(--mid); font-weight: 300;
+      max-width: 560px; margin-top: .8rem; line-height: 1.7;
+    }
+    .divider { width: 3rem; height: 3px; background: var(--amber); border-radius: 2px; margin: 1.2rem 0 2.5rem; }
+
+    /* ── PROPERTY CARDS ── */
+    .properties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem; margin-top: .5rem;
+    }
+    .property-card {
+      background: var(--white); border-radius: 16px;
+      overflow: hidden; box-shadow: var(--shadow);
+      transition: transform .25s, box-shadow .25s;
+      cursor: pointer;
+    }
+    .property-card:hover { transform: translateY(-6px); box-shadow: var(--shadow2); }
+    .property-card-img {
+      height: 200px; overflow: hidden; position: relative;
+    }
+    .property-card-img img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .4s;
+    }
+    .property-card:hover .property-card-img img { transform: scale(1.05); }
+    .property-card-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--amber); color: var(--white);
+      font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      padding: .25rem .7rem; border-radius: 20px;
+    }
+
+    .property-card-body { padding: 1.4rem; }
+    .property-card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem; font-weight: 700; color: var(--dark);
+      margin-bottom: .3rem;
+    }
+    .property-card-location {
+      font-size: .82rem; color: var(--mid); margin-bottom: .8rem;
+      display: flex; align-items: center; gap: .3rem;
+    }
+    .property-card-tags {
+      display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .property-card-tags span {
+      font-size: .7rem; font-weight: 500; color: var(--mid);
+      background: var(--warm); padding: .25rem .6rem; border-radius: 12px;
+    }
+    .property-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--sand); padding-top: 1rem;
+    }
+    .property-card-price {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-weight: 900; color: var(--dark);
+    }
+    .property-card-price small {
+      font-family: 'DM Sans', sans-serif;
+      font-size: .72rem; font-weight: 400; color: var(--light);
+    }
+    .property-card-btn {
+      background: var(--amber); color: var(--white);
+      padding: .5rem 1rem; border-radius: 6px;
+      font-size: .78rem; font-weight: 600; text-decoration: none;
+      border: none; cursor: pointer;
+      transition: background .2s;
+    }
+    .property-card-btn:hover { background: var(--amber2); }
+    .property-card-book {
+      display: flex; align-items: center; justify-content: center; gap: .4rem;
+      background: var(--dark); color: var(--white);
+      padding: .7rem; border-radius: 8px; margin-top: .8rem;
+      font-size: .85rem; font-weight: 700; text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .property-card-book:hover { background: var(--charcoal); transform: translateY(-2px); }
+
+    /* ── WHY CHOOSE US ── */
+    .why-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem; margin-top: .5rem;
+    }
+    .why-card {
+      text-align: center; padding: 2rem 1.2rem;
+      border-radius: 12px; background: var(--white);
+      box-shadow: var(--shadow);
+    }
+    .why-icon { font-size: 2rem; margin-bottom: .8rem; }
+    .why-title { font-weight: 700; font-size: .95rem; color: var(--dark); margin-bottom: .4rem; }
+    .why-desc { font-size: .82rem; color: var(--mid); line-height: 1.5; }
+
+    /* ── DETAIL VIEW ── */
+    #detail-view { display: none; padding-top: 64px; }
+    #detail-view.active { display: block; }
+    #home-view { display: block; }
+    #home-view.hidden { display: none; }
+
+    .detail-back {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .88rem; font-weight: 500; color: var(--amber);
+      text-decoration: none; cursor: pointer;
+      margin-bottom: 1.5rem;
+      transition: color .2s;
+    }
+    .detail-back:hover { color: var(--amber2); }
+
+    .detail-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;
+    }
+    .detail-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 900; color: var(--dark);
+    }
+    .detail-meta {
+      display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;
+    }
+    .detail-meta-item {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .85rem; color: var(--mid);
+    }
+
+    /* ── DETAIL GALLERY ── */
+    .detail-gallery {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 200px 200px;
+      gap: 8px; border-radius: 16px; overflow: hidden;
+      margin-bottom: 2.5rem;
+    }
+    .detail-gallery .dg-main { grid-row: 1 / 3; }
+    .detail-gallery .dg-item {
+      overflow: hidden; cursor: pointer; position: relative;
+    }
+    .detail-gallery .dg-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .4s;
+    }
+    .detail-gallery .dg-item:hover img { transform: scale(1.04); }
+    .detail-gallery .dg-more {
+      position: absolute; inset: 0;
+      background: rgba(26,20,16,.6);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--white); font-size: 1rem; font-weight: 600;
+    }
+
+    /* ── DETAIL PRICING ── */
+    .detail-pricing {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem; margin-bottom: 2.5rem;
+    }
+    .detail-price-card {
+      background: var(--white); border: 2px solid var(--sand);
+      border-radius: 12px; padding: 1.4rem; text-align: center;
+    }
+    .detail-price-card.primary { background: var(--amber); border-color: var(--amber); }
+    .detail-price-card.primary .dp-label { color: rgba(255,255,255,.75); }
+    .detail-price-card.primary .dp-value { color: var(--white); }
+    .detail-price-card.primary .dp-sub { color: rgba(255,255,255,.8); }
+    .dp-label {
+      font-size: .68rem; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--amber); margin-bottom: .4rem;
+    }
+    .dp-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 900; color: var(--dark);
+    }
+    .dp-sub { font-size: .82rem; color: var(--mid); margin-top: .3rem; }
+
+    /* ── DETAIL AMENITIES ── */
+    .detail-amenities {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .8rem; margin-bottom: 2.5rem;
+    }
+    .detail-amenity {
+      background: var(--warm); border-radius: 8px;
+      padding: .8rem 1rem; text-align: center;
+      font-size: .82rem; color: var(--charcoal); font-weight: 500;
+    }
+
+    /* ── DETAIL LOCATION ── */
+    .detail-location {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2rem; margin-bottom: 2.5rem; align-items: start;
+    }
+    .detail-map {
+      border-radius: 12px; overflow: hidden;
+      box-shadow: var(--shadow2); height: 320px;
+    }
+    .detail-map iframe { width: 100%; height: 100%; border: none; }
+    .detail-contact-card {
+      background: var(--white); border-radius: 16px;
+      padding: 2rem; box-shadow: var(--shadow2);
+    }
+    .detail-contact-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; color: var(--dark); margin-bottom: 1.2rem;
+    }
+    .dc-item {
+      display: flex; align-items: center; gap: .8rem;
+      padding: .8rem 0; border-bottom: 1px solid var(--warm);
+    }
+    .dc-item:last-of-type { border-bottom: none; }
+    .dc-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(200,129,58,.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0;
+    }
+    .dc-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--light); }
+    .dc-val { font-size: .92rem; font-weight: 600; color: var(--dark); }
+    .dc-val a { color: var(--dark); text-decoration: none; }
+    .dc-val a:hover { color: var(--amber); }
+
+    .detail-call-btn {
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      background: var(--amber); color: var(--white);
+      padding: .9rem; border-radius: 8px; font-size: 1rem; font-weight: 700;
+      text-decoration: none; margin-top: 1.2rem;
+      transition: background .2s, transform .15s;
+    }
+    .detail-call-btn:hover { background: var(--amber2); transform: translateY(-2px); }
+    .detail-wa-btn {
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      background: #25D366; color: #fff;
+      padding: .9rem; border-radius: 8px; font-size: 1rem; font-weight: 700;
+      text-decoration: none; margin-top: .6rem;
+      transition: background .2s, transform .15s;
+    }
+    .detail-wa-btn:hover { background: #1ebe5d; transform: translateY(-2px); }
+
+    /* ── DETAIL VIDEO ── */
+    .detail-video-section { margin-bottom: 2.5rem; }
+    .detail-video-wrapper {
+      position: relative; border-radius: 12px; overflow: hidden;
+      box-shadow: var(--shadow2); background: var(--dark);
+      max-width: 800px;
+    }
+    .detail-video-wrapper video {
+      width: 100%; display: block; max-height: 450px; object-fit: cover;
+    }
+
+    /* ── FLOATING BUTTONS ── */
+    .wa-float {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: #25D366;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(37,211,102,.55);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .wa-float:hover { transform: scale(1.12); box-shadow: 0 6px 28px rgba(37,211,102,.7); }
+    .wa-float svg { width: 32px; height: 32px; }
+    .maps-float {
+      position: fixed; bottom: 96px; right: 24px; z-index: 999;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(66,133,244,.45);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .maps-float:hover { transform: scale(1.12); box-shadow: 0 6px 28px rgba(66,133,244,.65); }
+    .maps-float img { width: 38px; height: 38px; object-fit: contain; }
+
+    /* ── LIGHTBOX ── */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.92); align-items: center; justify-content: center;
+    }
+    .lightbox.active { display: flex; }
+    .lightbox img {
+      max-width: calc(100vw - 140px); max-height: 90vh;
+      border-radius: 6px; object-fit: contain;
+      user-select: none;
+    }
+    .lightbox-close {
+      position: absolute; top: 1.5rem; right: 2rem;
+      color: var(--white); font-size: 2rem; cursor: pointer;
+      background: none; border: none; line-height: 1;
+    }
+    .lightbox-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.25);
+      color: var(--white); font-size: 1.5rem;
+      width: 52px; height: 52px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .2s; user-select: none;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,.25); }
+    .lightbox-prev { left: 1.5rem; }
+    .lightbox-next { right: 1.5rem; }
+    .lightbox-counter {
+      position: absolute; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,.6); font-size: .82rem; letter-spacing: .06em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark); color: rgba(255,255,255,.4);
+      text-align: center; padding: 2rem 8vw;
+      font-size: .8rem;
+    }
+    footer span { color: var(--amber); }
+
+    /* ── FIND PG FLOATING BUTTON ── */
+    .find-pg-float {
+      position: fixed; bottom: 24px; left: 24px; z-index: 998;
+    }
+    .find-pg-pill {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--dark); color: var(--white);
+      padding: .6rem 1rem; border-radius: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.35);
+      cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s;
+      font-size: .82rem; font-weight: 600; white-space: nowrap;
+      animation: slideInBanner .5s .8s ease both;
+    }
+    .find-pg-pill:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,0,0,.45); background: var(--charcoal); }
+    .find-pg-pill-icon { font-size: 1rem; }
+
+    @media (max-width: 768px) {
+      .find-pg-float { bottom: 20px; left: 12px; }
+      .find-pg-pill { padding: .55rem .9rem; font-size: .78rem; }
+    }
+    @keyframes slideInBanner {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PG PICKER MODAL ── */
+    .pg-picker-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1001;
+      background: rgba(0,0,0,.6); align-items: center; justify-content: center;
+    }
+    .pg-picker-overlay.active { display: flex; }
+    .pg-picker {
+      background: var(--white); border-radius: 16px;
+      padding: 2rem; max-width: 380px; width: calc(100vw - 40px);
+      box-shadow: var(--shadow2);
+      animation: slideInBanner .3s ease;
+    }
+    .pg-picker h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; font-weight: 700; color: var(--dark);
+      margin-bottom: .3rem;
+    }
+    .pg-picker p {
+      font-size: .82rem; color: var(--mid); margin-bottom: 1.2rem;
+    }
+    .pg-picker-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+    .pg-picker-list li a {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 1rem; border-radius: 10px;
+      background: var(--warm); text-decoration: none;
+      transition: background .2s, transform .1s;
+    }
+    .pg-picker-list li a:hover { background: var(--sand); transform: translateX(4px); }
+    .pg-picker-list li a .pp-name { font-size: .88rem; font-weight: 600; color: var(--dark); }
+    .pg-picker-list li a .pp-loc { font-size: .72rem; color: var(--mid); }
+    .pg-picker-list li a .pp-arrow { color: var(--amber); font-weight: 700; font-size: 1.1rem; }
+    .pg-picker-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; font-size: 1.3rem;
+      color: var(--mid); cursor: pointer;
+    }
+    .pg-picker-close:hover { color: var(--dark); }
+    .pg-picker { position: relative; }
+
+    @media (max-width: 768px) {
+      .loc-banner { left: 12px; bottom: 96px; max-width: calc(100vw - 90px); }
+    }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 4vw; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      section { padding: 3.5rem 5vw; }
+      .properties-grid { grid-template-columns: 1fr; }
+      .detail-gallery {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 180px 140px;
+      }
+      .detail-gallery .dg-main { grid-row: auto; grid-column: 1 / -1; }
+      .detail-location { grid-template-columns: 1fr; }
+      .detail-map { height: 250px; }
+      .why-grid { grid-template-columns: 1fr 1fr; }
+      .stats-strip { grid-template-columns: repeat(2, 1fr); }
+      .lightbox img { max-width: calc(100vw - 80px); }
+      .lightbox-nav { width: 40px; height: 40px; font-size: 1.1rem; }
+      .lightbox-prev { left: .6rem; }
+      .lightbox-next { right: .6rem; }
+    }
+    @media (max-width: 480px) {
+      .detail-gallery { grid-template-columns: 1fr; grid-template-rows: 200px 120px 120px; }
+      .detail-pricing { grid-template-columns: 1fr; }
+      .why-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="goHome()">
+    <span style="display:flex;align-items:flex-end;gap:0;line-height:1;padding-bottom:4px;">
+      <span style="font-size:1.4rem;font-weight:700;color:var(--dark);line-height:1;">PG&nbsp;A</span>
+      <span style="font-size:2.5rem;font-weight:900;color:var(--amber);line-height:0.82;letter-spacing:-.02em;">1</span>
+    </span>
+  </div>
+  <div class="nav-links">
+    <a href="#" onclick="goHome();return false;">Home</a>
+    <a href="#properties">Properties</a>
+    <a href="#why-us">Why Us</a>
+    <a href="#" onclick="goHome();return false;" class="nav-cta">Book Now</a>
+  </div>
+  <div class="hamburger" id="hamburger" onclick="toggleMobile()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#" onclick="goHome();closeMobile();return false;">Home</a>
+  <a href="#properties" onclick="closeMobile()">Properties</a>
+  <a href="#why-us" onclick="closeMobile()">Why Us</a>
+  <a href="#" onclick="openOfficeFinder();closeMobile();return false;">📍 Find Nearest PG</a>
+  <a href="#" onclick="goHome();closeMobile();return false;">Book Now</a>
+</div>
+
+<!-- ==================== HOME VIEW ==================== -->
+<div id="home-view">
+
+<!-- HERO -->
+<section class="hero" style="padding:0;" id="hero-section">
+  <div class="hero-slides" id="hero-slides">
+    <div class="hero-slide active" data-pg="shanti-nagar">
+      <img src="images/room photo tv.jpeg" alt="PG A1 Shanti Nagar" />
+      <div class="hero-slide-label">PG A1 – Shanti Nagar</div>
+    </div>
+    <div class="hero-slide" data-pg="jharsa-village">
+      <img src="PGA1 jharsa village-done/main building.jpeg" alt="PG A1 Jharsa Village" />
+      <div class="hero-slide-label">PG A1 – Jharsa Village</div>
+    </div>
+    <div class="hero-slide" data-pg="sector-46">
+      <img src="PGA1 Sec 46-done/main building.jpg" alt="PG A1 Sector 46" />
+      <div class="hero-slide-label">PG A1 – Sector 46</div>
+    </div>
+    <div class="hero-slide" data-pg="saraswati-vihar">
+      <img src="PGA1 Sarswati Vihar PG-done/20260617_194010.jpg" alt="PG A1 Saraswati Vihar" />
+      <div class="hero-slide-label">PG A1 – Saraswati Vihar</div>
+    </div>
+    <div class="hero-slide" data-pg="saraswati-vihar-1bhk">
+      <img src="PGA1 1BHK saraswati vihar-done/PGA1 1BHk saraswati vihar drawing room-1.jpeg" alt="PG A1 1BHK" />
+      <div class="hero-slide-label">PG A1 – Saraswati Vihar (1BHK)</div>
+    </div>
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Comfort · Convenience · Community</div>
+    <h1 class="hero-title">Find Your Perfect<br>Stay in Gurugram</h1>
+    <p class="hero-sub">Premium PGs and 1 BHK Homes near top corporate offices and metro stations.</p>
+    <div class="hero-btns">
+      <a href="#properties" class="btn-primary">Explore Properties →</a>
+      <a href="tel:+919310226604" class="btn-outline">📞 Contact Us</a>
+    </div>
+  </div>
+  <div class="hero-dots" id="hero-dots"></div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-num">5</div>
+    <div class="stat-label">Properties</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">1</div>
+    <div class="stat-label">1 BHK Home</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">100+</div>
+    <div class="stat-label">Happy Residents</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">Prime</div>
+    <div class="stat-label">Locations</div>
+  </div>
+</div>
+
+<!-- PROPERTIES -->
+<section id="properties">
+  <div class="section-label">Featured Properties</div>
+  <h2 class="section-title">Explore Our PGs & Homes</h2>
+  <p class="section-desc">Handpicked properties with premium amenities in prime locations.</p>
+  <div class="divider"></div>
+  <div class="properties-grid" id="properties-grid">
+    <!-- Cards injected by JS -->
+  </div>
+</section>
+
+<!-- WHY CHOOSE US -->
+<section id="why-us" style="background:var(--warm);">
+  <div class="section-label">Why Choose Us</div>
+  <h2 class="section-title">Designed for Your Comfort</h2>
+  <div class="divider"></div>
+  <div class="why-grid">
+    <div class="why-card reveal">
+      <div class="why-icon">📍</div>
+      <div class="why-title">Prime Locations</div>
+      <div class="why-desc">Close to metro, corporate offices and markets</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">🏠</div>
+      <div class="why-title">All Amenities</div>
+      <div class="why-desc">AC rooms, WiFi, Food, Laundry & more</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">🔒</div>
+      <div class="why-title">Safe & Secure</div>
+      <div class="why-desc">CCTV surveillance, 24/7 security & warden</div>
+    </div>
+    <div class="why-card reveal">
+      <div class="why-icon">✨</div>
+      <div class="why-title">Hassle Free Living</div>
+      <div class="why-desc">No brokerage, no hidden charges</div>
+    </div>
+  </div>
+</section>
+
+</div><!-- end #home-view -->
+
+<!-- ==================== DETAIL VIEW ==================== -->
+<div id="detail-view">
+  <section style="padding-top:2rem;">
+    <div class="detail-back" onclick="goHome()">← Back to All Properties</div>
+    <div class="detail-header">
+      <h1 class="detail-title" id="detail-title"></h1>
+      <div class="detail-meta" id="detail-meta"></div>
+    </div>
+    <div class="detail-gallery" id="detail-gallery"></div>
+
+    <!-- Video -->
+    <div class="detail-video-section" id="detail-video-section" style="display:none;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--dark);margin-bottom:1rem;">Video Tour</h3>
+      <div id="detail-videos"></div>
+    </div>
+
+    <!-- Pricing -->
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--dark);margin-bottom:1rem;">Pricing</h3>
+    <div class="detail-pricing" id="detail-pricing"></div>
+
+    <!-- Amenities -->
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--dark);margin-bottom:1rem;">Amenities</h3>
+    <div class="detail-amenities" id="detail-amenities"></div>
+
+    <!-- Location & Contact -->
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--dark);margin-bottom:1rem;">Location & Contact</h3>
+    <div class="detail-location" id="detail-location"></div>
+  </section>
+</div>
+
+<!-- FIND PG FLOATING BUTTON (left side) -->
+<div class="find-pg-float" id="find-pg-float">
+  <div class="find-pg-pill" onclick="openOfficeFinder()">
+    <span class="find-pg-pill-icon">📍</span>
+    <span>Find PG Near Office</span>
+  </div>
+</div>
+
+<!-- OFFICE FINDER MODAL -->
+<div class="pg-picker-overlay" id="office-finder-overlay" onclick="if(event.target===this)closeOfficeFinder()">
+  <div class="pg-picker" style="max-width:440px;">
+    <button class="pg-picker-close" onclick="closeOfficeFinder()">✕</button>
+    <h3>📍 Find PG Near Your Office</h3>
+    <p>Select your office area or use your current location</p>
+
+    <div id="office-step-1">
+      <div style="margin-bottom:1rem;">
+        <button onclick="useMyLocation()" style="width:100%;padding:.7rem;border-radius:8px;border:1.5px solid var(--amber);background:transparent;color:var(--amber);font-size:.85rem;font-weight:600;cursor:pointer;transition:background .2s;">📍 Use My Current Location</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--mid);text-align:center;margin-bottom:.8rem;">— OR select your office area —</div>
+      <select id="office-select" style="width:100%;padding:.8rem;border-radius:8px;border:1.5px solid var(--sand);font-size:.9rem;color:var(--charcoal);background:var(--warm);cursor:pointer;margin-bottom:1rem;">
+        <option value="">Choose your office area...</option>
+        <option value="28.4945,77.0880">Cyber City / DLF Phase 2</option>
+        <option value="28.4725,77.0725">Udyog Vihar</option>
+        <option value="28.4590,77.0727">IFFCO Chowk</option>
+        <option value="28.4421,77.0514">Sector 44-46</option>
+        <option value="28.4802,77.0867">MG Road / Sikanderpur</option>
+        <option value="28.4132,77.0425">Manesar</option>
+        <option value="28.4285,77.0380">Sector 37 / IMT</option>
+        <option value="28.4500,77.0264">Sector 14 / Old Gurugram</option>
+        <option value="28.4680,77.0720">Sector 29 / Leisure Valley</option>
+        <option value="28.4560,77.0500">Rajiv Chowk</option>
+        <option value="28.4300,77.0450">Pace City / Sector 37C</option>
+        <option value="28.4050,77.0550">Sector 67-68 / Golf Course Ext</option>
+        <option value="28.4740,77.1040">Huda City Centre</option>
+        <option value="28.4850,77.0930">Sector 15 / Galleria Market</option>
+        <option value="28.4380,77.0280">Honda Chowk</option>
+        <option value="28.4600,77.0400">Kandsa Road</option>
+        <option value="28.4480,77.0650">Sector 38-40</option>
+        <option value="28.5010,77.0870">Sector 5 / IFFCO Colony</option>
+      </select>
+
+      <div style="border-radius:10px;overflow:hidden;height:180px;margin-bottom:1rem;box-shadow:var(--shadow);">
+        <iframe id="office-map-preview" src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d56121.4!2d77.05!3d28.46!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin" style="width:100%;height:100%;border:none;" loading="lazy"></iframe>
+      </div>
+
+      <button onclick="submitOfficeFinder()" style="width:100%;padding:.8rem;border-radius:8px;background:var(--amber);color:var(--white);font-size:.92rem;font-weight:700;border:none;cursor:pointer;transition:background .2s;">Find Nearest PG →</button>
+    </div>
+
+    <div id="office-step-2" style="display:none;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:.8rem;">🎉</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--dark);margin-bottom:.5rem;" id="office-result-name"></div>
+      <div style="font-size:.88rem;color:var(--mid);margin-bottom:.3rem;" id="office-result-dist"></div>
+      <div style="font-size:.82rem;color:var(--mid);margin-bottom:1.2rem;" id="office-result-price"></div>
+      <button id="office-view-btn" onclick="" style="width:100%;padding:.8rem;border-radius:8px;background:var(--amber);color:var(--white);font-size:.92rem;font-weight:700;border:none;cursor:pointer;transition:background .2s;margin-bottom:.6rem;">View Details →</button>
+      <button onclick="resetOfficeFinder()" style="width:100%;padding:.6rem;border-radius:8px;background:transparent;border:1.5px solid var(--sand);color:var(--mid);font-size:.82rem;font-weight:500;cursor:pointer;">Try Another Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- PG PICKER MODAL -->
+<div class="pg-picker-overlay" id="pg-picker-overlay" onclick="if(event.target===this)closePickerModal()">
+  <div class="pg-picker">
+    <button class="pg-picker-close" onclick="closePickerModal()">✕</button>
+    <h3 id="picker-title">Choose a PG</h3>
+    <p id="picker-desc">Select which property you'd like to view on the map</p>
+    <ul class="pg-picker-list" id="pg-picker-list"></ul>
+  </div>
+</div>
+
+<!-- FLOATING BUTTONS -->
+<a id="float-maps" href="#" onclick="handleMapsClick(event)" class="maps-float" aria-label="Open in Google Maps">
+  <img src="images/google-maps.png" alt="Google Maps" />
+</a>
+<a id="float-wa" href="#" onclick="handleWaClick(event)" class="wa-float" aria-label="Chat on WhatsApp">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)">&#8249;</button>
+  <img id="lightbox-img" src="" alt="Photo" />
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">&#8250;</button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>PG A1</span> · Premium PG Accommodation in Gurugram · All rights reserved</p>
+</footer>
+
+<script>
+let pgData = [];
+let currentPG = null;
+let galleryImages = [];
+let lightboxIndex = 0;
+
+// ─── API Configuration ───────────────────────────────────────
+// Change this to your Laravel backend URL when deployed
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000/api/v1'
+  : '/api/v1'; // Same domain in production
+
+// Load PG data from Laravel API (with fallback to static JSON for offline/dev)
+function loadPgData() {
+  fetch(`${API_BASE_URL}/public/pg-locations`)
+    .then(r => {
+      if (!r.ok) throw new Error('API not available');
+      return r.json();
+    })
+    .then(data => {
+      // Transform API response to match frontend format
+      pgData = data.pg_locations.map(pg => transformApiPg(pg));
+      renderPropertyCards();
+      handleRoute();
+    })
+    .catch(err => {
+      console.warn('Laravel API unavailable, falling back to static pg-data.json:', err.message);
+      // Fallback to static JSON (for when backend is not running)
+      fetch('pg-data.json')
+        .then(r => r.json())
+        .then(data => {
+          pgData = data.pgs;
+          renderPropertyCards();
+          handleRoute();
+        });
+    });
+}
+
+/**
+ * Transform Laravel API PG response to the frontend data format.
+ * The API returns: { id, name, address, city, pincode, description, photos,
+ *   starting_rent, latitude, longitude, available_beds, total_beds }
+ * The frontend expects the shape defined in pg-data.json.
+ */
+function transformApiPg(apiPg) {
+  return {
+    id: apiPg.slug || apiPg.id.toString(),
+    name: apiPg.name,
+    location: `${apiPg.city || 'Gurugram'}`,
+    address: apiPg.address,
+    lat: parseFloat(apiPg.latitude) || null,
+    lng: parseFloat(apiPg.longitude) || null,
+    rent: parseInt(apiPg.starting_rent) || 0,
+    security: parseInt(apiPg.security_deposit) || 0,
+    sharing: apiPg.sharing_type || 'Double Sharing',
+    whatsapp: apiPg.whatsapp || '919310226604',
+    phone: apiPg.phone || '+919310226604',
+    phoneDisplay: apiPg.phone_display || '+91 93102 26604',
+    mapIframe: apiPg.map_iframe || '',
+    mapLink: apiPg.map_link || `https://maps.google.com/?q=${apiPg.latitude},${apiPg.longitude}`,
+    coverPhoto: (apiPg.photos && apiPg.photos.length > 0) ? apiPg.photos[0] : '',
+    photos: apiPg.photos || [],
+    videos: apiPg.videos || [],
+    amenities: apiPg.amenities || [],
+    meals: apiPg.meals || '',
+    tags: apiPg.tags || [],
+    // Live availability from the database
+    availableBeds: apiPg.available_beds || 0,
+    totalBeds: apiPg.total_beds || 0,
+  };
+}
+
+loadPgData();
+
+// Render property cards on home
+function renderPropertyCards() {
+  const grid = document.getElementById('properties-grid');
+  grid.innerHTML = pgData.map(pg => {
+    // Live availability badge (from API) — only show if data is available
+    const availabilityBadge = (pg.availableBeds !== undefined && pg.totalBeds > 0)
+      ? `<span style="background:${pg.availableBeds > 0 ? '#d4edda' : '#f8d7da'};color:${pg.availableBeds > 0 ? '#155724' : '#721c24'};">${pg.availableBeds > 0 ? pg.availableBeds + ' beds available' : 'Fully occupied'}</span>`
+      : '';
+
+    return `
+    <div class="property-card reveal" onclick="showDetail('${pg.id}')">
+      <div class="property-card-img">
+        <img src="${pg.coverPhoto}" alt="${pg.name}" loading="lazy" />
+        <div class="property-card-badge">${pg.sharing}</div>
+      </div>
+      <div class="property-card-body">
+        <div class="property-card-name">${pg.name}</div>
+        <div class="property-card-location">📍 ${pg.location}</div>
+        <div class="property-card-tags">
+          ${pg.tags.map(t => `<span>${t}</span>`).join('')}
+          ${availabilityBadge}
+        </div>
+        <div class="property-card-footer">
+          <div class="property-card-price">₹${pg.rent.toLocaleString('en-IN')}<small>/month</small></div>
+          <button class="property-card-btn">View Details</button>
+        </div>
+        <a href="tel:${pg.phone}" class="property-card-book" onclick="event.stopPropagation()">📞 Book Now</a>
+      </div>
+    </div>
+  `}).join('');
+  initReveal();
+}
+
+// Show detail view
+function showDetail(id) {
+  const pg = pgData.find(p => p.id === id);
+  if (!pg) return;
+  currentPG = pg;
+  window.location.hash = 'pg/' + id;
+  renderDetail(pg);
+}
+
+function renderDetail(pg) {
+  document.getElementById('home-view').classList.add('hidden');
+  document.getElementById('detail-view').classList.add('active');
+  window.scrollTo(0, 0);
+
+  // Title
+  document.getElementById('detail-title').textContent = pg.name;
+
+  // Meta
+  document.getElementById('detail-meta').innerHTML = `
+    <div class="detail-meta-item">📍 ${pg.location}</div>
+    <div class="detail-meta-item">🏠 ${pg.sharing}</div>
+  `;
+
+  // Gallery (show up to 5, with "+X more" on last)
+  const photos = pg.photos;
+  galleryImages = photos;
+  const showCount = Math.min(5, photos.length);
+  let galleryHTML = '';
+  for (let i = 0; i < showCount; i++) {
+    const cls = i === 0 ? 'dg-item dg-main' : 'dg-item';
+    const moreOverlay = (i === showCount - 1 && photos.length > 5)
+      ? `<div class="dg-more">+${photos.length - 5} more</div>` : '';
+    galleryHTML += `
+      <div class="${cls}" onclick="openLightbox(${i})">
+        <img src="${photos[i]}" alt="${pg.name}" loading="lazy" />
+        ${moreOverlay}
+      </div>`;
+  }
+  document.getElementById('detail-gallery').innerHTML = galleryHTML;
+
+  // Videos
+  const videoSection = document.getElementById('detail-video-section');
+  const videosDiv = document.getElementById('detail-videos');
+  if (pg.videos && pg.videos.length > 0) {
+    videoSection.style.display = 'block';
+    videosDiv.innerHTML = pg.videos.map(v => {
+      if (v.includes('drive.google.com')) {
+        return `
+          <div class="detail-video-wrapper" style="margin-bottom:1rem;">
+            <iframe src="${v}" width="100%" style="aspect-ratio:16/9;border:none;border-radius:12px;" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>`;
+      }
+      return `
+        <div class="detail-video-wrapper" style="margin-bottom:1rem;">
+          <video controls playsinline preload="metadata" style="width:100%;display:block;max-height:450px;object-fit:cover;">
+            <source src="${v}" type="video/mp4" />
+          </video>
+        </div>`;
+    }).join('');
+  } else {
+    videoSection.style.display = 'none';
+    videosDiv.innerHTML = '';
+  }
+
+  // Pricing
+  let pricingHTML = `
+    <div class="detail-price-card primary">
+      <div class="dp-label">Monthly Rent</div>
+      <div class="dp-value">₹${pg.rent.toLocaleString('en-IN')}</div>
+      <div class="dp-sub">per ${pg.sharing === '1BHK' ? 'flat' : 'bed'} · ${pg.sharing}</div>
+    </div>
+    <div class="detail-price-card">
+      <div class="dp-label">Security Deposit</div>
+      <div class="dp-value">₹${pg.security.toLocaleString('en-IN')}</div>
+      <div class="dp-sub">One-time · Refundable</div>
+    </div>`;
+  if (pg.availableBeds !== undefined && pg.totalBeds > 0) {
+    pricingHTML += `
+    <div class="detail-price-card" style="border-color:${pg.availableBeds > 0 ? '#28a745' : '#dc3545'};">
+      <div class="dp-label">Availability</div>
+      <div class="dp-value" style="font-size:1.6rem;color:${pg.availableBeds > 0 ? '#28a745' : '#dc3545'};">${pg.availableBeds > 0 ? pg.availableBeds + ' Beds' : 'Full'}</div>
+      <div class="dp-sub">${pg.availableBeds > 0 ? 'out of ' + pg.totalBeds + ' total beds' : 'Join waitlist — call us'}</div>
+    </div>`;
+  }
+  if (pg.meals) {
+    pricingHTML += `
+    <div class="detail-price-card">
+      <div class="dp-label">Food Included</div>
+      <div class="dp-value" style="font-size:1.2rem;">${pg.meals.split('|')[0].trim()}</div>
+      <div class="dp-sub">${pg.meals.split('|')[1] ? pg.meals.split('|')[1].trim() : ''}</div>
+    </div>`;
+  }
+  document.getElementById('detail-pricing').innerHTML = pricingHTML;
+
+  // Amenities
+  const amenIcons = { 'AC':'❄️','Geyser':'🚿','Wi-Fi':'📶','Washing Machine':'👕','Double Bed':'🛏','Wardrobe':'🗄️','Meals Included':'🍽️','Kitchen':'🍳','Drawing Room':'🛋️' };
+  document.getElementById('detail-amenities').innerHTML = pg.amenities.map(a =>
+    `<div class="detail-amenity">${amenIcons[a]||'✓'} ${a}</div>`
+  ).join('');
+
+  // Location & Contact
+  const mapLink = pg.mapLink || `https://maps.google.com/?q=${pg.address}`;
+  document.getElementById('detail-location').innerHTML = `
+    <div class="detail-map">
+      <iframe src="${pg.mapIframe}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="detail-contact-card">
+      <h3>Contact</h3>
+      <div class="dc-item">
+        <div class="dc-icon">📍</div>
+        <div><div class="dc-label">Address</div><div class="dc-val">${pg.address}</div></div>
+      </div>
+      <div class="dc-item">
+        <div class="dc-icon">📞</div>
+        <div><div class="dc-label">Phone</div><div class="dc-val"><a href="tel:${pg.phone}">${pg.phoneDisplay}</a></div></div>
+      </div>
+      <a href="tel:${pg.phone}" class="detail-call-btn">📞 Call ${pg.phoneDisplay}</a>
+      <a href="https://wa.me/${pg.whatsapp}?text=Hi%2C%20I'm%20interested%20in%20${encodeURIComponent(pg.name)}" target="_blank" rel="noopener" class="detail-wa-btn">💬 Chat on WhatsApp</a>
+    </div>
+  `;
+
+  // Update floating buttons
+  updateFloatingButtons(pg);
+}
+
+// ── PICKER MODAL & FLOATING BUTTONS ──
+let pickerMode = ''; // 'map' or 'wa'
+
+function handleMapsClick(e) {
+  e.preventDefault();
+  if (currentPG) {
+    // On detail page — open directly
+    const link = currentPG.mapLink || `https://maps.google.com/?q=${encodeURIComponent(currentPG.address)}`;
+    window.open(link, '_blank');
+  } else {
+    // On home page — show picker
+    pickerMode = 'map';
+    showPickerModal('Open in Google Maps', 'Select which PG location to view');
+  }
+}
+
+function handleWaClick(e) {
+  e.preventDefault();
+  if (currentPG) {
+    // On detail page — open directly
+    window.open(`https://wa.me/${currentPG.whatsapp}?text=Hi%2C%20I'm%20interested%20in%20${encodeURIComponent(currentPG.name)}`, '_blank');
+  } else {
+    // On home page — show picker
+    pickerMode = 'wa';
+    showPickerModal('Chat on WhatsApp', 'Select which PG you want to enquire about');
+  }
+}
+
+function showPickerModal(title, desc) {
+  document.getElementById('picker-title').textContent = title;
+  document.getElementById('picker-desc').textContent = desc;
+  const list = document.getElementById('pg-picker-list');
+  list.innerHTML = pgData.map(pg => `
+    <li>
+      <a href="#" onclick="pickPG('${pg.id}');return false;">
+        <div>
+          <div class="pp-name">${pg.name}</div>
+          <div class="pp-loc">${pg.location}</div>
+        </div>
+        <span class="pp-arrow">→</span>
+      </a>
+    </li>
+  `).join('');
+  document.getElementById('pg-picker-overlay').classList.add('active');
+}
+
+function pickPG(id) {
+  const pg = pgData.find(p => p.id === id);
+  if (!pg) return;
+  closePickerModal();
+  if (pickerMode === 'map') {
+    const link = pg.mapLink || `https://maps.google.com/?q=${encodeURIComponent(pg.address)}`;
+    window.open(link, '_blank');
+  } else if (pickerMode === 'wa') {
+    window.open(`https://wa.me/${pg.whatsapp}?text=Hi%2C%20I'm%20interested%20in%20${encodeURIComponent(pg.name)}`, '_blank');
+  }
+}
+
+function closePickerModal() {
+  document.getElementById('pg-picker-overlay').classList.remove('active');
+}
+
+// Update floating buttons (now handled by click handlers above)
+function updateFloatingButtons(pg) {
+  // No-op: buttons now use click handlers that check currentPG
+}
+
+// Go back home
+function goHome() {
+  window.location.hash = '';
+  document.getElementById('detail-view').classList.remove('active');
+  document.getElementById('home-view').classList.remove('hidden');
+  currentPG = null;
+  updateFloatingButtons(null);
+  window.scrollTo(0, 0);
+}
+
+// Handle hash routing
+function handleRoute() {
+  const hash = window.location.hash;
+  if (hash.startsWith('#pg/')) {
+    const id = hash.replace('#pg/', '');
+    const pg = pgData.find(p => p.id === id);
+    if (pg) {
+      currentPG = pg;
+      renderDetail(pg);
+      return;
+    }
+  }
+  document.getElementById('detail-view').classList.remove('active');
+  document.getElementById('home-view').classList.remove('hidden');
+}
+
+window.addEventListener('hashchange', () => {
+  if (!window.location.hash.startsWith('#pg/')) {
+    goHome();
+  } else {
+    handleRoute();
+  }
+});
+
+// Lightbox
+function openLightbox(index) {
+  lightboxIndex = index;
+  showLightboxImage();
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function showLightboxImage() {
+  document.getElementById('lightbox-img').src = galleryImages[lightboxIndex];
+  document.getElementById('lightbox-counter').textContent =
+    (lightboxIndex + 1) + ' / ' + galleryImages.length;
+}
+
+function lightboxNav(dir) {
+  lightboxIndex = (lightboxIndex + dir + galleryImages.length) % galleryImages.length;
+  showLightboxImage();
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
+
+// Mobile menu
+function toggleMobile() {
+  document.getElementById('hamburger').classList.toggle('active');
+  document.getElementById('mobile-menu').classList.toggle('active');
+}
+function closeMobile() {
+  document.getElementById('hamburger').classList.remove('active');
+  document.getElementById('mobile-menu').classList.remove('active');
+}
+
+// Scroll reveal
+function initReveal() {
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => {
+    revealObs.observe(el);
+  });
+}
+
+// Init reveal for static elements
+document.addEventListener('DOMContentLoaded', () => {
+  initReveal();
+  initHeroSlider();
+  initLocationBanner();
+});
+
+// ── LOCATION SUGGESTION ──
+function initLocationBanner() {
+  // The floating button is already visible by default (expanded state)
+}
+
+function openOfficeFinder() {
+  document.getElementById('office-finder-overlay').classList.add('active');
+}
+
+function closeOfficeFinder() {
+  document.getElementById('office-finder-overlay').classList.remove('active');
+}
+
+function resetOfficeFinder() {
+  document.getElementById('office-step-1').style.display = 'block';
+  document.getElementById('office-step-2').style.display = 'none';
+  document.getElementById('office-select').value = '';
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition((pos) => {
+    findNearestFromCoords(pos.coords.latitude, pos.coords.longitude);
+  }, () => {
+    alert('Location access denied. Please select your area from the dropdown instead.');
+  }, { enableHighAccuracy: false, timeout: 10000 });
+}
+
+function submitOfficeFinder() {
+  const select = document.getElementById('office-select');
+  if (!select.value) {
+    alert('Please select your office area or use your current location');
+    return;
+  }
+  const [lat, lng] = select.value.split(',').map(Number);
+  findNearestFromCoords(lat, lng);
+}
+
+function findNearestFromCoords(lat, lng) {
+  let nearest = null;
+  let minDist = Infinity;
+
+  pgData.forEach(pg => {
+    if (pg.lat && pg.lng) {
+      const dist = haversine(lat, lng, pg.lat, pg.lng);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = pg;
+      }
+    }
+  });
+
+  if (nearest) {
+    const distStr = minDist < 1
+      ? Math.round(minDist * 1000) + ' m'
+      : minDist.toFixed(1) + ' km';
+
+    document.getElementById('office-step-1').style.display = 'none';
+    document.getElementById('office-step-2').style.display = 'block';
+    document.getElementById('office-result-name').textContent = nearest.name + ' is nearest to your office!';
+    document.getElementById('office-result-dist').textContent = '📍 Just ' + distStr + ' away';
+    document.getElementById('office-result-price').textContent = '₹' + nearest.rent.toLocaleString('en-IN') + '/month · ' + nearest.sharing;
+    document.getElementById('office-view-btn').onclick = () => {
+      closeOfficeFinder();
+      showDetail(nearest.id);
+    };
+  }
+}
+
+// Haversine formula (returns distance in km)
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Hero Slideshow
+function initHeroSlider() {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dotsContainer = document.getElementById('hero-dots');
+  let currentSlide = 0;
+  let interval;
+
+  // Create dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'hero-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+    dot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      goToSlide(i);
+      resetInterval();
+    });
+    dotsContainer.appendChild(dot);
+  });
+
+  function goToSlide(index) {
+    slides[currentSlide].classList.remove('active');
+    dotsContainer.children[currentSlide].classList.remove('active');
+    currentSlide = index;
+    slides[currentSlide].classList.add('active');
+    dotsContainer.children[currentSlide].classList.add('active');
+  }
+
+  function nextSlide() {
+    goToSlide((currentSlide + 1) % slides.length);
+  }
+
+  function resetInterval() {
+    clearInterval(interval);
+    interval = setInterval(nextSlide, 4500);
+  }
+
+  // Click on hero to open the current PG detail
+  document.getElementById('hero-section').addEventListener('click', (e) => {
+    // Don't navigate if clicking buttons or links
+    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('.hero-dots')) return;
+    const activePgId = slides[currentSlide].dataset.pg;
+    if (activePgId && pgData.length > 0) {
+      showDetail(activePgId);
+    }
+  });
+
+  // Start auto-play
+  interval = setInterval(nextSlide, 4500);
+}
+</script>
+
+</body>
+</html>

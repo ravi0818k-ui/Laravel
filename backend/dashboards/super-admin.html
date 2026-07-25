@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | Super Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { cream:'#faf6f0', warm:'#f2ebe0', sand:'#e8d8c4', amber:'#c8813a', 'amber-hover':'#e09a50', dark:'#1a1410', charcoal:'#3d3028', mid:'#7a6655', light:'#b8a898', success:'#2d6a4f', 'success-bg':'#d8f3dc', danger:'#c1121f', 'danger-bg':'#fde8e8', info:'#1d4ed8', 'info-bg':'#dbeafe' },
+        fontFamily: { display:['Playfair Display','serif'], body:['DM Sans','sans-serif'], brand:['Roboto','sans-serif'] },
+        boxShadow: { card:'0 4px 32px rgba(26,20,16,0.10)', 'card-hover':'0 12px 48px rgba(26,20,16,0.18)' }
+      }}
+    }
+  </script>
+  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}.sidebar-scrollbar::-webkit-scrollbar{width:4px}.sidebar-scrollbar::-webkit-scrollbar-thumb{background:rgba(200,129,58,0.3);border-radius:10px}</style>
+</head>
+<body class="bg-cream text-charcoal">
+
+<!-- Sidebar -->
+<aside class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
+  <div class="p-6">
+    <div class="flex items-end gap-0">
+      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+    </div>
+    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Super Admin</p>
+  </div>
+  <nav class="flex-1 mt-2 sidebar-scrollbar overflow-y-auto" id="sidebar-nav">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-page="dashboard">
+      <span class="material-symbols-outlined text-amber">dashboard</span>
+      <span class="text-sm font-medium">Dashboard</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="pg-locations">
+      <span class="material-symbols-outlined">location_city</span>
+      <span class="text-sm font-medium">PG Locations</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="admins">
+      <span class="material-symbols-outlined">admin_panel_settings</span>
+      <span class="text-sm font-medium">Admins</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="tenants">
+      <span class="material-symbols-outlined">groups</span>
+      <span class="text-sm font-medium">All Tenants</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="payments">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="text-sm font-medium">Payments</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="onboarding">
+      <span class="material-symbols-outlined">person_add</span>
+      <span class="text-sm font-medium">Onboarding</span>
+    </a>
+  </nav>
+  <div class="p-4 border-t border-charcoal">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm" id="user-avatar">SA</div>
+      <div>
+        <p class="text-sm font-bold text-white" id="user-name">Super Admin</p>
+        <button onclick="api.logout()" class="text-[10px] tracking-wider uppercase text-light hover:text-amber transition-colors">Logout</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Top Header -->
+<header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
+  <div class="flex items-center gap-3">
+    <button class="md:hidden p-2 text-dark" onclick="document.querySelector('aside').classList.toggle('hidden')">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <h2 class="font-display text-lg font-bold text-dark md:hidden">PG A1</h2>
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="text-xs font-semibold text-mid hidden md:block">PG A1 Management</span>
+    <span class="text-[10px] bg-amber text-white px-2 py-0.5 rounded-full font-bold">v1.0</span>
+    <button onclick="api.logout()" class="p-2 text-mid hover:text-amber hover:bg-warm rounded-full transition-all" title="Logout">
+      <span class="material-symbols-outlined">logout</span>
+    </button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="md:ml-60 min-h-screen px-4 pb-4 md:px-6 md:pb-6" style="padding-top:5rem;" id="main-content">
+  <!-- Loading state -->
+  <div id="loading" class="flex items-center justify-center h-64">
+    <div class="text-center">
+      <span class="material-symbols-outlined text-4xl text-amber animate-spin">progress_activity</span>
+      <p class="text-sm text-mid mt-2">Loading dashboard...</p>
+    </div>
+  </div>
+
+  <!-- Dashboard content (injected by JS) -->
+  <div id="dashboard-content" class="hidden"></div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/modal.js"></script>
+<script>
+  // Auth guard
+  if (!requireAuth(['super_admin'])) throw new Error('Unauthorized');
+
+  const user = api.getUser();
+  document.getElementById('user-name').textContent = user.name;
+  document.getElementById('user-avatar').textContent = user.name.split(' ').map(w => w[0]).join('').substring(0, 2);
+
+  // ─── Navigation ───────────────────────────────────────────────
+  let currentSection = 'dashboard';
+
+  document.querySelectorAll('#sidebar-nav a[data-page]').forEach(link => {
+    link.style.cursor = 'pointer';
+    link.addEventListener('click', () => showSection(link.dataset.page));
+  });
+
+  async function showSection(section) {
+    currentSection = section;
+    const content = document.getElementById('dashboard-content');
+    const loading = document.getElementById('loading');
+    content.classList.add('hidden');
+    loading.classList.remove('hidden');
+    loading.innerHTML = '<div class="flex items-center justify-center h-64"><span class="material-symbols-outlined text-4xl text-amber animate-spin">progress_activity</span></div>';
+
+    // Update active nav
+    document.querySelectorAll('#sidebar-nav a[data-page]').forEach(a => {
+      a.classList.remove('border-amber', 'text-white', 'bg-charcoal');
+      a.classList.add('border-transparent', 'text-light');
+    });
+    const activeLink = document.querySelector(`#sidebar-nav a[data-page="${section}"]`);
+    if (activeLink) {
+      activeLink.classList.add('border-amber', 'text-white', 'bg-charcoal');
+      activeLink.classList.remove('border-transparent', 'text-light');
+    }
+
+    try {
+      switch (section) {
+        case 'dashboard': await loadDashboard(); return;
+        case 'tenants': await loadTenants(); break;
+        case 'pg-locations': await loadPgLocations(); break;
+        case 'admins': await loadAdminsPage(); break;
+        case 'payments': await loadPayments(); break;
+        case 'onboarding': await loadOnboarding(); break;
+      }
+    } catch (err) {
+      content.innerHTML = `<p class="text-danger text-center py-8">Error: ${err.data?.message || 'Failed to load'} <button onclick="showSection('${section}')" class="text-amber font-bold ml-2">Retry</button></p>`;
+      content.classList.remove('hidden');
+      loading.classList.add('hidden');
+    }
+  }
+
+  // ─── Dashboard ────────────────────────────────────────────────
+  async function loadDashboard() {
+    const [dashData, pgData] = await Promise.all([
+      api.superAdminDashboard(),
+      api.adminPgLocations()
+    ]);
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = renderDashboard(dashData, pgData.pg_locations || []);
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  function renderDashboard(stats, pgLocations) {
+    return `
+      <!-- Header -->
+      <div class="mb-6 flex flex-wrap justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 class="font-display text-2xl md:text-3xl font-black text-dark">Super Admin Dashboard</h2>
+          <p class="text-sm text-mid mt-1">Real-time overview across all PG locations.</p>
+        </div>
+        <button onclick="showAddPgModal()" class="bg-amber text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all active:scale-95 shadow-card font-semibold text-sm whitespace-nowrap">
+          <span class="material-symbols-outlined text-lg">add</span>Add New PG
+        </button>
+      </div>
+
+      <!-- Metrics -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">PG Locations</p>
+              <h3 class="font-display text-3xl font-black text-dark mt-1">${stats.total_pg_locations}</h3>
+            </div>
+            <div class="bg-warm p-2 rounded-xl"><span class="material-symbols-outlined text-amber">location_city</span></div>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Total Beds</p>
+              <h3 class="font-display text-3xl font-black text-dark mt-1">${stats.total_beds}</h3>
+              <p class="text-xs text-success mt-1">${stats.available_beds} available</p>
+            </div>
+            <div class="bg-warm p-2 rounded-xl"><span class="material-symbols-outlined text-amber">bed</span></div>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Active Tenants</p>
+              <h3 class="font-display text-3xl font-black text-dark mt-1">${stats.total_tenants}</h3>
+            </div>
+            <div class="bg-success-bg p-2 rounded-xl"><span class="material-symbols-outlined text-success">groups</span></div>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Pending Payments</p>
+              <h3 class="font-display text-3xl font-black ${stats.pending_payments > 0 ? 'text-danger' : 'text-dark'} mt-1">${stats.pending_payments}</h3>
+            </div>
+            <div class="bg-danger-bg p-2 rounded-xl"><span class="material-symbols-outlined text-danger">pending_actions</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PG Locations Grid -->
+      <div class="bg-white p-5 rounded-2xl border border-sand shadow-card mb-6">
+        <div class="flex justify-between items-center mb-4 border-b border-sand pb-3">
+          <h4 class="font-display text-lg font-bold text-dark">PG Locations</h4>
+          <span class="text-xs text-mid">${pgLocations.length} locations</span>
+        </div>
+        ${pgLocations.length === 0 ? '<p class="text-sm text-mid text-center py-8">No PG locations yet. Add your first one!</p>' :
+        `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${pgLocations.map(pg => `
+            <div class="p-4 bg-warm rounded-xl hover:shadow-card transition-all cursor-pointer">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h5 class="text-sm font-bold text-dark">${pg.name}</h5>
+                  <p class="text-xs text-mid mt-0.5">${pg.address || pg.city || ''}</p>
+                </div>
+                <span class="text-[10px] font-bold ${pg.is_active ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'} px-2 py-0.5 rounded-full">${pg.is_active ? 'Active' : 'Inactive'}</span>
+              </div>
+              <div class="flex items-center gap-4 mt-3 text-xs text-mid">
+                <span>🏠 ${pg.rooms_count || 0} rooms</span>
+                <span>🛏 ${pg.tenants_count || 0} tenants</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>`}
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <button onclick="showAddPgModal()" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl">add_business</span>
+          <p class="text-xs font-bold text-dark mt-2">Add PG Location</p>
+        </button>
+        <button onclick="loadAdmins()" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl">person_add</span>
+          <p class="text-xs font-bold text-dark mt-2">Add Admin</p>
+        </button>
+        <button onclick="generateRentPrompt()" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl">receipt_long</span>
+          <p class="text-xs font-bold text-dark mt-2">Generate Rent</p>
+        </button>
+        <button onclick="generateOnboardingLink()" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl">link</span>
+          <p class="text-xs font-bold text-dark mt-2">Onboarding Link</p>
+        </button>
+      </div>
+    `;
+  }
+
+  // ─── Actions ──────────────────────────────────────────────────
+  async function showAddPgModal() {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Add New PG Location</h3>
+        <div class="space-y-3">
+          ${buildFormField('pg-name', 'PG Name', 'text', 'e.g. PG A1 – Sector 50')}
+          ${buildFormField('pg-address', 'Full Address', 'text', 'Street, Area, City')}
+          <div class="grid grid-cols-2 gap-3">
+            ${buildFormField('pg-city', 'City', 'text', '', 'Gurugram')}
+            ${buildFormField('pg-pincode', 'Pincode', 'text', '122001')}
+          </div>
+          ${buildFormField('pg-prefix', 'Tenant ID Prefix', 'text', 'e.g. TSN, TJV, TS50')}
+          ${buildFormField('pg-rent', 'Starting Rent (₹)', 'number', '8000')}
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitAddPg()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Create PG</button>
+        </div>
+      </div>
+    `);
+  }
+
+  async function submitAddPg() {
+    const name = document.getElementById('pg-name').value.trim();
+    const address = document.getElementById('pg-address').value.trim();
+    const city = document.getElementById('pg-city').value.trim() || 'Gurugram';
+    const pincode = document.getElementById('pg-pincode').value.trim();
+    const prefix = document.getElementById('pg-prefix').value.trim();
+    const rent = document.getElementById('pg-rent').value;
+
+    if (!name || !prefix) { showToast('Name and Prefix are required', 'error'); return; }
+
+    closeModal();
+    try {
+      await api.createPgLocation({ name, address, city, pincode, tenant_id_prefix: prefix, starting_rent: parseFloat(rent) || 0, state: 'Haryana' });
+      showToast('PG Location created successfully!');
+      loadDashboard();
+    } catch (err) {
+      showToast(err.data?.message || 'Failed to create PG', 'error');
+    }
+  }
+
+  async function generateRentPrompt() {
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Generate Monthly Rent</h3>
+        <p class="text-sm text-[#7a6655] mb-4">This will create rent entries for all active tenants for the selected month.</p>
+        ${buildFormField('rent-month', 'Billing Month', 'month', '', currentMonth)}
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitGenerateRent()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Generate</button>
+        </div>
+      </div>
+    `);
+  }
+
+  async function submitGenerateRent() {
+    const month = document.getElementById('rent-month').value;
+    if (!month) { showToast('Please select a month', 'error'); return; }
+    closeModal();
+    try {
+      const result = await api.generateRent(month);
+      showToast(result.message);
+    } catch (err) {
+      showToast(err.data?.message || 'Failed', 'error');
+    }
+  }
+
+  async function generateOnboardingLink() {
+    closeModal();
+    try {
+      const result = await api.generateOnboardingLink();
+      showResult('Onboarding Link Generated', result.link, 'Share this link with the candidate via WhatsApp. It expires in 72 hours.');
+    } catch (err) {
+      showToast(err.data?.message || 'Failed to generate link', 'error');
+    }
+  }
+
+  async function loadAdmins() {
+    try {
+      const data = await api.listAdmins();
+      const admins = data.admins || [];
+      const pgData = await api.adminPgLocations();
+      const allPgs = pgData.pg_locations || [];
+
+      openModal(`
+        <div class="p-6 max-h-[85vh] overflow-y-auto">
+          <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Admin Management</h3>
+          ${admins.length > 0 ? `
+            <div class="mb-4">
+              <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Current Admins</p>
+              <div class="space-y-2">
+                ${admins.map(a => `
+                  <div class="flex items-center justify-between p-3 bg-[#f2ebe0] rounded-xl">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-[#c8813a] text-white flex items-center justify-center text-xs font-bold">${a.name.substring(0,2).toUpperCase()}</div>
+                      <div>
+                        <p class="text-sm font-bold text-[#1a1410]">${a.name}</p>
+                        <p class="text-[10px] text-[#7a6655]">${a.mobile} • ${(a.assigned_pg_locations || []).map(p => p.name.replace(/–/g,'-')).join(', ') || 'No PGs'}</p>
+                      </div>
+                    </div>
+                    <button onclick="showAssignPgModal(${a.id}, '${a.name}')" class="text-[10px] font-bold text-[#c8813a] hover:underline">Assign PG</button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : '<p class="text-sm text-[#7a6655] mb-4">No admins created yet.</p>'}
+          <div class="border-t border-[#e8d8c4] pt-4">
+            <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-3">Create New Admin</p>
+            <div class="space-y-3">
+              ${buildFormField('admin-name', 'Full Name', 'text', 'e.g. Ramesh Kumar')}
+              ${buildFormField('admin-mobile', 'Mobile Number', 'tel', '9876543210')}
+              ${buildFormField('admin-password', 'Password', 'password', 'Min 8 characters')}
+              <div>
+                <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-2">Assign PG Locations</label>
+                <div class="space-y-1.5 max-h-[150px] overflow-y-auto">
+                  ${allPgs.map(pg => `
+                    <label class="flex items-center gap-2 p-2 bg-[#f2ebe0] rounded-lg cursor-pointer hover:bg-[#e8d8c4] transition-colors">
+                      <input type="checkbox" class="admin-pg-checkbox rounded border-[#e8d8c4] text-[#c8813a] focus:ring-[#c8813a]" value="${pg.id}" />
+                      <span class="text-xs text-[#1a1410] font-medium">${pg.name.replace(/–/g,'-')}</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-3 mt-5">
+            <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Close</button>
+            <button onclick="submitCreateAdmin()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Create Admin</button>
+          </div>
+        </div>
+      `);
+    } catch (err) {
+      showToast(err.data?.message || 'Failed to load admins', 'error');
+    }
+  }
+
+  async function showAssignPgModal(adminId, adminName) {
+    closeModal();
+    const pgData = await api.adminPgLocations();
+    const allPgs = pgData.pg_locations || [];
+
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Assign PG Locations</h3>
+        <p class="text-sm text-[#7a6655] mb-4">Select PGs for <strong>${adminName}</strong></p>
+        <div class="space-y-1.5 max-h-[250px] overflow-y-auto">
+          ${allPgs.map(pg => `
+            <label class="flex items-center gap-2 p-2.5 bg-[#f2ebe0] rounded-lg cursor-pointer hover:bg-[#e8d8c4] transition-colors">
+              <input type="checkbox" class="assign-pg-checkbox rounded border-[#e8d8c4] text-[#c8813a] focus:ring-[#c8813a]" value="${pg.id}" />
+              <span class="text-sm text-[#1a1410] font-medium">${pg.name.replace(/–/g,'-')}</span>
+            </label>
+          `).join('')}
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitAssignPg(${adminId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Save Assignment</button>
+        </div>
+      </div>
+    `);
+  }
+
+  async function submitAssignPg(adminId) {
+    const checkboxes = document.querySelectorAll('.assign-pg-checkbox:checked');
+    const pgIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    if (pgIds.length === 0) { showToast('Select at least one PG', 'error'); return; }
+    closeModal();
+    try {
+      await api.assignPg(adminId, pgIds);
+      showToast('PG locations assigned!');
+    } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+  }
+
+  async function submitCreateAdmin() {
+    const name = document.getElementById('admin-name').value.trim();
+    const mobile = document.getElementById('admin-mobile').value.trim();
+    const password = document.getElementById('admin-password').value;
+    const checkboxes = document.querySelectorAll('.admin-pg-checkbox:checked');
+    const pgIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    if (!name || !mobile || !password) { showToast('All fields are required', 'error'); return; }
+    if (!/^\d{10}$/.test(mobile)) { showToast('Mobile number must be exactly 10 digits', 'error'); return; }
+    if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+    closeModal();
+    try {
+      await api.createAdmin({ name, mobile, password, pg_location_ids: pgIds });
+      showToast('Admin created successfully!' + (pgIds.length > 0 ? ` Assigned to ${pgIds.length} PG(s).` : ''));
+    } catch (err) {
+      showToast(err.data?.message || JSON.stringify(err.data?.errors) || 'Failed', 'error');
+    }
+  }
+
+  // ─── Tenants Page ──────────────────────────────────────────
+  async function loadTenants() {
+    const data = await api.adminTenants();
+    const tenants = data.tenants || [];
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = `
+      <div class="mb-6">
+        <h2 class="font-display text-2xl font-black text-dark">All Tenants</h2>
+        <p class="text-sm text-mid mt-1">${tenants.length} tenants across all locations</p>
+      </div>
+      ${tenants.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No tenants yet. Approve onboarding applications to create tenants.</p></div>' : `
+      <div class="bg-white rounded-2xl border border-sand shadow-card overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
+            <th class="p-4">Name</th><th class="p-4">Tenant ID</th><th class="p-4">PG Location</th><th class="p-4">Room/Bed</th><th class="p-4">Rent</th><th class="p-4">Status</th><th class="p-4">Joined</th>
+          </tr></thead>
+          <tbody>${tenants.map(t => `
+            <tr class="border-b border-sand/50 hover:bg-warm/30 transition-colors cursor-pointer" onclick="viewTenant(${t.id})">
+              <td class="p-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-amber text-white flex items-center justify-center text-xs font-bold">${(t.user?.name || 'T').substring(0,2).toUpperCase()}</div>
+                  <div>
+                    <p class="font-bold text-dark">${t.user?.name || '—'}</p>
+                    <p class="text-[10px] text-light">${t.user?.mobile || ''}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="p-4 font-mono text-amber font-bold text-xs">${t.tenant_id}</td>
+              <td class="p-4 text-mid">${t.pg_location?.name || '—'}</td>
+              <td class="p-4 text-mid">${t.current_bed_allocation?.bed?.room?.room_number ? 'Room ' + t.current_bed_allocation.bed.room.room_number + ', Bed ' + t.current_bed_allocation.bed.bed_number : '—'}</td>
+              <td class="p-4 font-bold text-dark">₹${parseInt(t.current_rent).toLocaleString('en-IN')}</td>
+              <td class="p-4"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status==='active' ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'}">${t.status}</span></td>
+              <td class="p-4 text-xs text-mid">${t.joining_date || '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    `;
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  async function viewTenant(tenantId) {
+    try {
+      const data = await api.adminTenantDetail(tenantId);
+      const t = data.tenant;
+      openModal(`
+        <div class="p-6 text-left max-h-[80vh] overflow-y-auto">
+          <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">${t.user?.name || 'Tenant'} <span class="font-mono text-[#c8813a] text-sm">${t.tenant_id}</span></h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Mobile</span><span class="font-bold text-[#1a1410]">${t.user?.mobile || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">PG Location</span><span class="font-bold text-[#1a1410]">${t.pg_location?.name || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Room / Bed</span><span class="font-bold text-[#1a1410]">${t.current_bed_allocation?.bed?.room?.room_number ? 'Room ' + t.current_bed_allocation.bed.room.room_number + ', Bed ' + t.current_bed_allocation.bed.bed_number : 'Not assigned'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Current Rent</span><span class="font-bold text-[#1a1410]">₹${parseInt(t.current_rent).toLocaleString('en-IN')}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Joining Date</span><span class="font-bold text-[#1a1410]">${t.joining_date || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">DOB</span><span class="font-bold text-[#1a1410]">${t.date_of_birth || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Company</span><span class="font-bold text-[#1a1410]">${t.company_or_college || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Parent Mobile</span><span class="font-bold text-[#1a1410]">${t.parent_mobile || '—'}</span></div>
+            <div class="flex justify-between py-1.5 border-b border-[#e8d8c4]/50"><span class="text-[#7a6655]">Referral Code</span><span class="font-mono font-bold text-[#c8813a]">${t.referral_code || '—'}</span></div>
+            <div class="flex justify-between py-1.5"><span class="text-[#7a6655]">Status</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status==='active' ? 'text-[#2d6a4f] bg-[#d8f3dc]' : 'text-[#c1121f] bg-[#fde8e8]'}">${t.status}</span></div>
+          </div>
+          <button onclick="closeModal()" class="w-full mt-5 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Close</button>
+        </div>
+      `);
+    } catch (err) {
+      showToast('Failed to load tenant details', 'error');
+    }
+  }
+
+  // ─── Onboarding Page ──────────────────────────────────────────
+  async function loadOnboarding() {
+    const data = await api.listApplications();
+    const apps = data.applications || [];
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = `
+      <div class="mb-6 flex justify-between items-end">
+        <div>
+          <h2 class="font-display text-2xl font-black text-dark">Onboarding Applications</h2>
+          <p class="text-sm text-mid mt-1">${apps.length} applications</p>
+        </div>
+        <button onclick="generateOnboardingLink()" class="bg-amber text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all font-semibold text-sm">
+          <span class="material-symbols-outlined text-lg">link</span>New Link
+        </button>
+      </div>
+      ${apps.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No onboarding applications yet.</p></div>' : `
+      <div class="space-y-3">
+        ${apps.map(a => `
+          <div class="bg-white p-5 rounded-2xl border border-sand shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-bold text-dark">${a.candidate_name || 'Pending submission'}</p>
+              <p class="text-xs text-mid">${a.candidate_mobile || 'Link generated'} • ${a.pg_location?.name || ''}</p>
+              <p class="text-[10px] text-light mt-0.5">Created: ${new Date(a.created_at).toLocaleDateString('en-IN')}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                a.status==='submitted' ? 'text-amber bg-warm' :
+                a.status==='approved' ? 'text-success bg-success-bg' :
+                a.status==='rejected' ? 'text-danger bg-danger-bg' :
+                'text-mid bg-warm'
+              }">${a.status}</span>
+              ${a.status === 'submitted' ? `<button onclick="viewApplication(${a.id})" class="text-xs font-bold text-amber border border-amber px-3 py-1 rounded-lg hover:bg-amber hover:text-white transition-all">Review</button>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`}
+    `;
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  function viewApplication(id) {
+    showToast('Application review coming soon. Use Admin panel for full approval flow.', 'info');
+  }
+
+  // ─── PG Locations Page ────────────────────────────────────────
+  async function loadPgLocations() {
+    const data = await api.adminPgLocations();
+    const pgs = data.pg_locations || [];
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = `
+      <div class="mb-6 flex justify-between items-end">
+        <h2 class="font-display text-2xl font-black text-dark">PG Locations</h2>
+        <button onclick="showAddPgModal()" class="bg-amber text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all font-semibold text-sm">
+          <span class="material-symbols-outlined text-lg">add</span>Add PG
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        ${pgs.map(pg => `
+          <div class="bg-white p-5 rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-shadow">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-display text-base font-bold text-dark">${pg.name}</h4>
+                <p class="text-xs text-mid mt-0.5">${pg.address || pg.city}</p>
+              </div>
+              <span class="text-[10px] font-bold ${pg.is_active ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'} px-2 py-0.5 rounded-full">${pg.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div class="flex items-center gap-4 mt-3 text-xs text-mid">
+              <span>🏠 ${pg.rooms_count || 0} rooms</span>
+              <span>👤 ${pg.tenants_count || 0} tenants</span>
+              <span>💰 ₹${parseInt(pg.starting_rent || 0).toLocaleString('en-IN')}/mo</span>
+            </div>
+            <p class="text-[10px] font-mono text-light mt-2">Prefix: ${pg.tenant_id_prefix}</p>
+          </div>`).join('')}
+      </div>
+    `;
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  // ─── Admins Page ──────────────────────────────────────────────
+  async function loadAdminsPage() {
+    const data = await api.listAdmins();
+    const admins = data.admins || [];
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = `
+      <div class="mb-6 flex justify-between items-end">
+        <h2 class="font-display text-2xl font-black text-dark">Admin Management</h2>
+        <button onclick="loadAdmins()" class="bg-amber text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all font-semibold text-sm">
+          <span class="material-symbols-outlined text-lg">person_add</span>Add Admin
+        </button>
+      </div>
+      ${admins.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No admins created yet.</p></div>' : `
+      <div class="space-y-3">
+        ${admins.map(a => `
+          <div class="bg-white p-5 rounded-2xl border border-sand shadow-card flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full ${a.is_active ? 'bg-amber' : 'bg-light'} text-white flex items-center justify-center font-bold text-sm">${a.name.substring(0,2).toUpperCase()}</div>
+              <div>
+                <p class="text-sm font-bold text-dark">${a.name}</p>
+                <p class="text-xs text-mid">${a.mobile} • ${(a.assigned_pg_locations || []).map(p => p.name.replace(/–/g,'-')).join(', ') || 'No PGs assigned'}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="showAssignPgModal(${a.id}, '${a.name}')" class="text-[10px] font-bold text-amber border border-amber px-2 py-1 rounded-lg hover:bg-amber hover:text-white transition-all">Assign PG</button>
+              <button onclick="resetAdminPassword(${a.id}, '${a.name}')" class="text-[10px] font-bold text-mid border border-sand px-2 py-1 rounded-lg hover:bg-warm transition-all">Reset Pwd</button>
+              <button onclick="toggleAdminStatus(${a.id}, ${a.is_active})" class="text-[10px] font-bold ${a.is_active ? 'text-danger border-danger hover:bg-danger' : 'text-success border-success hover:bg-success'} border px-2 py-1 rounded-lg hover:text-white transition-all">${a.is_active ? 'Deactivate' : 'Activate'}</button>
+            </div>
+          </div>`).join('')}
+      </div>`}
+    `;
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  async function toggleAdminStatus(adminId, currentlyActive) {
+    const action = currentlyActive ? 'deactivate' : 'activate';
+    showConfirm(
+      `${currentlyActive ? 'Deactivate' : 'Activate'} Admin`,
+      `Are you sure you want to ${action} this admin? ${currentlyActive ? 'They will not be able to login.' : 'They will regain access.'}`,
+      async () => {
+        try {
+          await api.put(`/super-admin/admins/${adminId}/status`, { is_active: !currentlyActive });
+          showToast(`Admin ${action}d successfully!`);
+          showSection('admins');
+        } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+      }
+    );
+  }
+
+  function resetAdminPassword(adminId, adminName) {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Reset Password</h3>
+        <p class="text-sm text-[#7a6655] mb-4">Set a new password for <strong>${adminName}</strong></p>
+        ${buildFormField('reset-pwd', 'New Password', 'password', 'Min 8 characters')}
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitResetPassword(${adminId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Reset</button>
+        </div>
+      </div>
+    `);
+  }
+
+  async function submitResetPassword(adminId) {
+    const pwd = document.getElementById('reset-pwd').value;
+    if (!pwd || pwd.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+    closeModal();
+    try {
+      await api.put(`/super-admin/admins/${adminId}/reset-password`, { password: pwd });
+      showToast('Password reset successfully! Share the new password with the admin.');
+    } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+  }
+
+  // ─── Payments Page ────────────────────────────────────────────
+  async function loadPayments() {
+    const data = await api.adminPayments();
+    const payments = data.payments || [];
+    const content = document.getElementById('dashboard-content');
+    content.innerHTML = `
+      <div class="mb-6">
+        <h2 class="font-display text-2xl font-black text-dark">Pending Payments</h2>
+        <p class="text-sm text-mid mt-1">${payments.length} payments awaiting verification</p>
+      </div>
+      ${payments.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><span class="material-symbols-outlined text-4xl text-success mb-2">check_circle</span><p class="text-success font-medium">All payments verified. Nothing pending!</p></div>' : `
+      <div class="space-y-3">
+        ${payments.map(p => `
+          <div class="bg-white p-5 rounded-2xl border border-sand shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-bold text-dark">${p.tenant?.user?.name || 'Tenant'} <span class="font-mono text-amber text-xs">${p.tenant?.tenant_id || ''}</span></p>
+              <p class="text-xs text-mid">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method} • ${p.payment_date || ''} • ${p.tenant?.pg_location?.name || ''}</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="saVerifyPayment(${p.id}, ${p.claimed_amount})" class="bg-success text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90">✓ Verify</button>
+              <button onclick="saRejectPayment(${p.id})" class="border border-danger text-danger px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">✗ Reject</button>
+            </div>
+          </div>`).join('')}
+      </div>`}
+    `;
+    content.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  async function saVerifyPayment(id, amount) {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Verify Payment</h3>
+        <p class="text-sm text-[#7a6655] mb-4">Confirm the amount after checking the screenshot.</p>
+        ${buildFormField('sa-verify-amt', 'Verified Amount (₹)', 'number', '', amount)}
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitSaVerify(${id})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#2d6a4f] hover:opacity-90">✓ Verify</button>
+        </div>
+      </div>
+    `);
+  }
+  async function submitSaVerify(id) {
+    const amount = document.getElementById('sa-verify-amt').value;
+    if (!amount) { showToast('Enter amount', 'error'); return; }
+    closeModal();
+    try { await api.verifyPayment(id, parseFloat(amount)); showToast('Payment verified!'); showSection('payments'); }
+    catch(e) { showToast(e.data?.message || 'Failed', 'error'); }
+  }
+
+  async function saRejectPayment(id) {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#c1121f] mb-2">Reject Payment</h3>
+        ${buildFormField('sa-reject-reason', 'Reason', 'text', 'e.g. Screenshot unclear')}
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4]">Cancel</button>
+          <button onclick="submitSaReject(${id})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c1121f] hover:opacity-90">Reject</button>
+        </div>
+      </div>
+    `);
+  }
+  async function submitSaReject(id) {
+    const reason = document.getElementById('sa-reject-reason').value.trim();
+    if (!reason) { showToast('Provide a reason', 'error'); return; }
+    closeModal();
+    try { await api.rejectPayment(id, reason); showToast('Payment rejected.'); showSection('payments'); }
+    catch(e) { showToast(e.data?.message || 'Failed', 'error'); }
+  }
+
+  // Boot
+  showSection('dashboard');
+</script>
+</body>
+</html>

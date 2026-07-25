@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#faf6f0',
+            warm: '#f2ebe0',
+            sand: '#e8d8c4',
+            amber: '#c8813a',
+            'amber-hover': '#e09a50',
+            dark: '#1a1410',
+            charcoal: '#3d3028',
+            mid: '#7a6655',
+            light: '#b8a898',
+            success: '#2d6a4f',
+            'success-bg': '#d8f3dc',
+            danger: '#c1121f',
+            'danger-bg': '#fde8e8',
+            info: '#1d4ed8',
+            'info-bg': '#dbeafe',
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['DM Sans', 'sans-serif'],
+            brand: ['Roboto', 'sans-serif'],
+          },
+          boxShadow: {
+            card: '0 4px 32px rgba(26, 20, 16, 0.10)',
+            'card-hover': '0 12px 48px rgba(26, 20, 16, 0.18)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="bg-cream text-charcoal">
+
+<!-- Sidebar -->
+<aside class="fixed h-screen w-60 left-0 top-0 bg-dark border-r border-charcoal flex flex-col z-40 hidden md:flex">
+  <div class="p-6">
+    <div class="flex items-end gap-0">
+      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+    </div>
+    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Admin Panel</p>
+  </div>
+  <nav class="flex-1 mt-2">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" href="#">
+      <span class="material-symbols-outlined text-amber">dashboard</span>
+      <span class="text-sm font-medium">Dashboard</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">groups</span>
+      <span class="text-sm font-medium">My Tenants</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">bed</span>
+      <span class="text-sm font-medium">Rooms & Beds</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="text-sm font-medium">Payments</span>
+      <span class="ml-auto text-[10px] bg-danger text-white px-1.5 py-0.5 rounded-full font-bold">4</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">person_add</span>
+      <span class="text-sm font-medium">Onboarding</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">electric_bolt</span>
+      <span class="text-sm font-medium">Electricity Bills</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">description</span>
+      <span class="text-sm font-medium">Documents</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal transition-colors" href="#">
+      <span class="material-symbols-outlined">support_agent</span>
+      <span class="text-sm font-medium">Concerns</span>
+    </a>
+  </nav>
+  <div class="p-4 border-t border-charcoal">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm">RK</div>
+      <div>
+        <p class="text-sm font-bold text-white">Ramesh Kumar</p>
+        <p class="text-[10px] tracking-wider uppercase text-light">Admin</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Top Header -->
+<header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
+  <div class="flex items-center gap-3">
+    <button class="md:hidden p-2 text-dark">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <div class="hidden md:block relative w-72">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-light text-lg">search</span>
+      <input class="w-full bg-warm text-sm px-10 py-2 rounded-lg border border-sand focus:ring-2 focus:ring-amber focus:border-amber outline-none" placeholder="Search tenants, rooms..." type="text" />
+    </div>
+    <!-- PG selector for admin (shows only assigned PGs) -->
+    <select class="md:ml-4 text-sm border border-sand bg-warm rounded-lg px-3 py-2 text-charcoal font-medium focus:ring-amber">
+      <option>Shanti Nagar</option>
+      <option>Jharsa Village</option>
+    </select>
+  </div>
+  <div class="flex items-center gap-3">
+    <button class="p-2 text-mid hover:text-amber hover:bg-warm rounded-full transition-all relative">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
+    </button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="md:ml-60 pt-16 min-h-screen p-4 md:p-6 pb-24 md:pb-6">
+  <!-- Header -->
+  <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
+    <div>
+      <h2 class="font-display text-2xl md:text-3xl font-black text-dark">Admin Dashboard</h2>
+      <p class="text-sm text-mid mt-1">Managing <span class="font-bold text-amber">Shanti Nagar</span> • 26 beds, 24 active tenants</p>
+    </div>
+    <button class="bg-amber text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all active:scale-95 shadow-card font-semibold text-sm">
+      <span class="material-symbols-outlined text-lg">link</span>
+      Generate Onboarding Link
+    </button>
+  </div>
+
+  <!-- Metrics -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+      <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Active Tenants</p>
+      <h3 class="font-display text-2xl font-black text-dark mt-1">24</h3>
+      <p class="text-xs text-success font-medium mt-1">2 available beds</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+      <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Rent Collected</p>
+      <h3 class="font-display text-2xl font-black text-dark mt-1">₹1,72,000</h3>
+      <p class="text-xs text-mid mt-1">of ₹1,92,000</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+      <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Pending Payments</p>
+      <h3 class="font-display text-2xl font-black text-danger mt-1">4</h3>
+      <p class="text-xs text-danger font-medium mt-1">Verify now →</p>
+    </div>
+    <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+      <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Open Concerns</p>
+      <h3 class="font-display text-2xl font-black text-amber mt-1">2</h3>
+      <p class="text-xs text-mid mt-1">1 high priority</p>
+    </div>
+  </div>
+
+  <!-- Pending Payment Verifications -->
+  <div class="bg-white p-5 rounded-2xl border border-sand shadow-card mb-6">
+    <div class="flex justify-between items-center mb-4 border-b border-sand pb-3">
+      <h4 class="font-display text-lg font-bold text-dark">Pending Payment Verifications</h4>
+      <span class="text-xs font-bold text-danger bg-danger-bg px-2.5 py-1 rounded-full">4 pending</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
+            <th class="py-2 pr-4">Tenant</th>
+            <th class="py-2 pr-4">Amount</th>
+            <th class="py-2 pr-4">Method</th>
+            <th class="py-2 pr-4">Date</th>
+            <th class="py-2 pr-4">Screenshot</th>
+            <th class="py-2">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-sand/50 hover:bg-warm/50 transition-colors">
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-amber text-white flex items-center justify-center text-xs font-bold">RS</div>
+                <div>
+                  <p class="font-bold text-dark text-xs">Rahul Sharma</p>
+                  <p class="text-[10px] text-light font-mono">TSN0012</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 pr-4 font-bold text-dark">₹8,000</td>
+            <td class="py-3 pr-4"><span class="text-[10px] bg-info-bg text-info px-2 py-0.5 rounded-full font-bold">GPay</span></td>
+            <td class="py-3 pr-4 text-mid">Jul 15</td>
+            <td class="py-3 pr-4"><button class="text-amber hover:underline text-xs font-medium">View</button></td>
+            <td class="py-3 flex gap-2">
+              <button class="bg-success text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Verify</button>
+              <button class="border border-danger text-danger px-3 py-1 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
+            </td>
+          </tr>
+          <tr class="border-b border-sand/50 hover:bg-warm/50 transition-colors">
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-charcoal text-white flex items-center justify-center text-xs font-bold">AK</div>
+                <div>
+                  <p class="font-bold text-dark text-xs">Amit Kumar</p>
+                  <p class="text-[10px] text-light font-mono">TSN0015</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 pr-4 font-bold text-dark">₹8,000</td>
+            <td class="py-3 pr-4"><span class="text-[10px] bg-success-bg text-success px-2 py-0.5 rounded-full font-bold">PhonePe</span></td>
+            <td class="py-3 pr-4 text-mid">Jul 14</td>
+            <td class="py-3 pr-4"><button class="text-amber hover:underline text-xs font-medium">View</button></td>
+            <td class="py-3 flex gap-2">
+              <button class="bg-success text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90">Verify</button>
+              <button class="border border-danger text-danger px-3 py-1 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-warm/50 transition-colors">
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-mid text-white flex items-center justify-center text-xs font-bold">PV</div>
+                <div>
+                  <p class="font-bold text-dark text-xs">Priya Verma</p>
+                  <p class="text-[10px] text-light font-mono">TSN0018</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 pr-4 font-bold text-dark">₹4,000</td>
+            <td class="py-3 pr-4"><span class="text-[10px] bg-warm text-amber px-2 py-0.5 rounded-full font-bold">UPI</span></td>
+            <td class="py-3 pr-4 text-mid">Jul 13</td>
+            <td class="py-3 pr-4"><button class="text-amber hover:underline text-xs font-medium">View</button></td>
+            <td class="py-3 flex gap-2">
+              <button class="bg-success text-white px-3 py-1 rounded-lg text-xs font-bold hover:opacity-90">Verify</button>
+              <button class="border border-danger text-danger px-3 py-1 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Room Grid & Onboarding -->
+  <div class="grid grid-cols-12 gap-5">
+    <!-- Room/Bed Overview -->
+    <div class="col-span-12 lg:col-span-7 bg-white p-5 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-4 border-b border-sand pb-3">
+        <h4 class="font-display text-lg font-bold text-dark">Room Overview — Shanti Nagar</h4>
+        <button class="text-xs font-bold text-amber hover:underline">Manage Rooms</button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- Room cards -->
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 101</p>
+          <p class="text-[10px] text-success font-semibold mt-1">2/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success" title="Bed A - Occupied"></div>
+            <div class="w-4 h-4 rounded-full bg-success" title="Bed B - Occupied"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 102</p>
+          <p class="text-[10px] text-success font-semibold mt-1">2/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-warm rounded-xl text-center border border-amber/20">
+          <p class="text-xs font-bold text-dark">Room 103</p>
+          <p class="text-[10px] text-amber font-semibold mt-1">1/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-sand border-2 border-dashed border-amber" title="Bed B - Available"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 201</p>
+          <p class="text-[10px] text-success font-semibold mt-1">3/3 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 202</p>
+          <p class="text-[10px] text-success font-semibold mt-1">2/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-warm rounded-xl text-center border border-amber/20">
+          <p class="text-xs font-bold text-dark">Room 203</p>
+          <p class="text-[10px] text-amber font-semibold mt-1">1/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-sand border-2 border-dashed border-amber"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 301</p>
+          <p class="text-[10px] text-success font-semibold mt-1">2/2 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-success-bg rounded-xl text-center border border-success/20">
+          <p class="text-xs font-bold text-dark">Room 302</p>
+          <p class="text-[10px] text-success font-semibold mt-1">3/3 Occupied</p>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+            <div class="w-4 h-4 rounded-full bg-success"></div>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 mt-4 pt-3 border-t border-sand text-xs text-mid">
+        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-success"></div> Occupied</span>
+        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-sand border-2 border-dashed border-amber"></div> Available</span>
+        <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-danger"></div> Maintenance</span>
+      </div>
+    </div>
+
+    <!-- Pending Onboarding -->
+    <div class="col-span-12 lg:col-span-5 bg-white p-5 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-4 border-b border-sand pb-3">
+        <h4 class="font-display text-lg font-bold text-dark">Pending Onboarding</h4>
+        <span class="text-xs font-bold text-amber bg-warm px-2.5 py-1 rounded-full">3 new</span>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3 bg-warm rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-dark">Vikash Kumar</p>
+            <p class="text-xs text-mid">Submitted Jul 16 • Docs: 3/3</p>
+          </div>
+          <button class="bg-amber text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-hover transition-all">Review</button>
+        </div>
+        <div class="p-3 bg-warm rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-dark">Neha Gupta</p>
+            <p class="text-xs text-mid">Submitted Jul 15 • Docs: 2/3</p>
+          </div>
+          <button class="bg-amber text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-hover transition-all">Review</button>
+        </div>
+        <div class="p-3 bg-warm rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-dark">Rohit Singh</p>
+            <p class="text-xs text-danger font-medium">Submitted Jul 14 • Aadhaar: Correction needed</p>
+          </div>
+          <button class="border border-amber text-amber px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber hover:text-white transition-all">Follow up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white border-t border-sand shadow-lg flex justify-around items-center z-50 rounded-t-2xl">
+  <a class="flex flex-col items-center gap-0.5 text-amber" href="#">
+    <span class="material-symbols-outlined">dashboard</span>
+    <span class="text-[10px] font-semibold">Home</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">payments</span>
+    <span class="text-[10px] font-semibold">Payments</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">groups</span>
+    <span class="text-[10px] font-semibold">Tenants</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">support_agent</span>
+    <span class="text-[10px] font-semibold">Concerns</span>
+  </a>
+</nav>
+
+</body>
+</html>

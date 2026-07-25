@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { cream:'#faf6f0', warm:'#f2ebe0', sand:'#e8d8c4', amber:'#c8813a', 'amber-hover':'#e09a50', dark:'#1a1410', charcoal:'#3d3028', mid:'#7a6655', light:'#b8a898', success:'#2d6a4f', danger:'#c1121f', 'danger-bg':'#fde8e8' },
+        fontFamily: { display:['Playfair Display','serif'], body:['DM Sans','sans-serif'], brand:['Roboto','sans-serif'] },
+        boxShadow: { card:'0 4px 32px rgba(26,20,16,0.10)', 'card-hover':'0 12px 48px rgba(26,20,16,0.18)' }
+      }}
+    }
+  </script>
+  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="bg-cream min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-sm">
+  <!-- Logo -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-end gap-0">
+      <span class="font-brand text-2xl font-bold text-dark">PG&nbsp;A</span>
+      <span class="font-brand text-4xl font-black text-amber leading-[0.82]">1</span>
+    </div>
+    <p class="text-xs text-mid uppercase tracking-[0.2em] font-semibold mt-2">Management System</p>
+  </div>
+
+  <!-- Login Card -->
+  <div class="bg-white rounded-2xl p-8 shadow-card border border-sand">
+    <h2 class="font-display text-2xl font-bold text-dark text-center mb-1">Welcome Back</h2>
+    <p class="text-sm text-mid text-center mb-6">Sign in with your mobile number</p>
+
+    <!-- Error Message -->
+    <div id="error-msg" class="hidden bg-danger-bg border border-danger/20 text-danger text-sm p-3 rounded-xl mb-4 text-center"></div>
+
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="text-[11px] font-semibold uppercase tracking-widest text-mid block mb-1.5">Mobile Number</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-light text-lg">phone</span>
+          <input id="mobile" type="tel" placeholder="9999999999" maxlength="10" required
+            oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+            class="w-full bg-warm text-charcoal text-sm pl-10 pr-4 py-3 rounded-xl border border-sand focus:ring-2 focus:ring-amber focus:border-amber outline-none transition-all" />
+        </div>
+      </div>
+      <div>
+        <label class="text-[11px] font-semibold uppercase tracking-widest text-mid block mb-1.5">Password</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-light text-lg">lock</span>
+          <input id="password" type="password" placeholder="••••••••" required
+            class="w-full bg-warm text-charcoal text-sm pl-10 pr-4 py-3 rounded-xl border border-sand focus:ring-2 focus:ring-amber focus:border-amber outline-none transition-all" />
+        </div>
+      </div>
+      <button type="submit" id="login-btn"
+        class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98] shadow-card mt-2">
+        <span class="material-symbols-outlined text-lg">login</span>
+        Sign In
+      </button>
+    </form>
+  </div>
+
+  <p class="text-center text-xs text-light mt-6">© 2026 PG A1 · Gurugram</p>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  // If already logged in, redirect
+  if (api.isLoggedIn()) redirectToDashboard();
+
+  const form = document.getElementById('login-form');
+  const errorMsg = document.getElementById('error-msg');
+  const loginBtn = document.getElementById('login-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg.classList.add('hidden');
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Signing in...';
+
+    const mobile = document.getElementById('mobile').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!/^\d{10}$/.test(mobile)) {
+      errorMsg.textContent = 'Please enter a valid 10-digit mobile number.';
+      errorMsg.classList.remove('hidden');
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = '<span class="material-symbols-outlined text-lg">login</span> Sign In';
+      return;
+    }
+
+    try {
+      const data = await api.login(mobile, password);
+      if (data && data.token) {
+        redirectToDashboard();
+      }
+    } catch (err) {
+      const msg = err.data?.message || err.data?.errors?.mobile?.[0] || 'Login failed. Please try again.';
+      errorMsg.textContent = msg;
+      errorMsg.classList.remove('hidden');
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = '<span class="material-symbols-outlined text-lg">login</span> Sign In';
+    }
+  });
+</script>
+</body>
+</html>

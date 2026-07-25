@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | My Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { cream:'#faf6f0', warm:'#f2ebe0', sand:'#e8d8c4', amber:'#c8813a', 'amber-hover':'#e09a50', dark:'#1a1410', charcoal:'#3d3028', mid:'#7a6655', light:'#b8a898', success:'#2d6a4f', 'success-bg':'#d8f3dc', danger:'#c1121f', 'danger-bg':'#fde8e8', info:'#1d4ed8', 'info-bg':'#dbeafe' },
+        fontFamily: { display:['Playfair Display','serif'], body:['DM Sans','sans-serif'], brand:['Roboto','sans-serif'] },
+        boxShadow: { card:'0 4px 32px rgba(26,20,16,0.10)', 'card-hover':'0 12px 48px rgba(26,20,16,0.18)' }
+      }}
+    }
+  </script>
+  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="bg-cream text-charcoal">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 z-30">
+  <div class="flex items-end gap-0">
+    <span class="font-brand text-base font-bold text-dark">PG&nbsp;A</span>
+    <span class="font-brand text-2xl font-black text-amber leading-[0.82]">1</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="api.logout()" class="text-xs text-mid font-semibold hover:text-amber">Logout</button>
+    <div class="w-8 h-8 rounded-full bg-amber text-white flex items-center justify-center font-bold text-xs" id="t-avatar">T</div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="pt-14 pb-20 min-h-screen px-4 md:px-8 md:max-w-2xl md:mx-auto" id="main">
+  <div class="flex justify-center py-12">
+    <span class="material-symbols-outlined text-3xl text-amber animate-spin">progress_activity</span>
+  </div>
+</main>
+
+<!-- Bottom Nav -->
+<nav class="fixed bottom-0 left-0 w-full h-16 bg-white border-t border-sand shadow-lg flex justify-around items-center z-50 rounded-t-2xl">
+  <a onclick="loadSection('home')" class="flex flex-col items-center gap-0.5 text-amber cursor-pointer" id="nav-home">
+    <span class="material-symbols-outlined">home</span><span class="text-[10px] font-semibold">Home</span>
+  </a>
+  <a onclick="loadSection('rents')" class="flex flex-col items-center gap-0.5 text-mid cursor-pointer" id="nav-rents">
+    <span class="material-symbols-outlined">receipt_long</span><span class="text-[10px] font-semibold">Rent</span>
+  </a>
+  <a onclick="loadSection('profile')" class="flex flex-col items-center gap-0.5 text-mid cursor-pointer" id="nav-profile">
+    <span class="material-symbols-outlined">person</span><span class="text-[10px] font-semibold">Profile</span>
+  </a>
+</nav>
+
+<script src="js/api.js"></script>
+<script>
+// Handle impersonation mode — use impersonate token if available
+(function() {
+  const isImpersonate = new URLSearchParams(window.location.search).has('impersonate');
+  
+  if (isImpersonate) {
+    const impToken = localStorage.getItem('pga1_impersonate_token');
+    const impUser = localStorage.getItem('pga1_impersonate_user');
+    if (impToken && impUser) {
+      // Clean up localStorage keys immediately
+      localStorage.removeItem('pga1_impersonate_token');
+      localStorage.removeItem('pga1_impersonate_user');
+      // Store in sessionStorage (tab-specific, not shared with admin tab)
+      sessionStorage.setItem('pga1_imp_token', impToken);
+      sessionStorage.setItem('pga1_imp_user', impUser);
+    }
+  }
+  
+  // If in impersonation mode, override api token methods to use sessionStorage
+  if (isImpersonate || sessionStorage.getItem('pga1_imp_token')) {
+    api.getToken = function() { return sessionStorage.getItem('pga1_imp_token'); };
+    api.setToken = function(t) { sessionStorage.setItem('pga1_imp_token', t); };
+    api.getUser = function() { const u = sessionStorage.getItem('pga1_imp_user'); return u ? JSON.parse(u) : null; };
+    api.setUser = function(u) { sessionStorage.setItem('pga1_imp_user', JSON.stringify(u)); };
+    api.isLoggedIn = function() { return !!sessionStorage.getItem('pga1_imp_token'); };
+    api.clearAuth = function() { sessionStorage.removeItem('pga1_imp_token'); sessionStorage.removeItem('pga1_imp_user'); };
+  }
+})();
+
+if (!requireAuth(['tenant'])) throw new Error('Unauthorized');
+
+// Date formatting helper
+function fmtDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const user = api.getUser();
+document.getElementById('t-avatar').textContent = user.name.substring(0,2).toUpperCase();
+
+let isPendingTenant = false;
+
+async function loadSection(section) {
+  // Block rent/profile for pending tenants
+  if (isPendingTenant && (section === 'rents' || section === 'profile')) {
+    return;
+  }
+
+  // Update bottom nav active state
+  document.querySelectorAll('#nav-home, #nav-rents, #nav-profile').forEach(el => {
+    el.classList.remove('text-amber');
+    el.classList.add('text-mid');
+  });
+  const activeNav = document.getElementById('nav-' + (section === 'home' ? 'home' : section === 'rents' ? 'rents' : 'profile'));
+  if (activeNav) { activeNav.classList.remove('text-mid'); activeNav.classList.add('text-amber'); }
+
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="flex justify-center py-12"><span class="material-symbols-outlined text-3xl text-amber animate-spin">progress_activity</span></div>';
+
+  switch(section) {
+    case 'home': await renderHome(); break;
+    case 'rents': await renderRents(); break;
+    case 'profile': await renderProfile(); break;
+  }
+}
+
+async function renderHome() {
+  try {
+    const data = await api.tenantDashboard();
+
+    // Check if pending approval (no tenant profile yet)
+    if (data.pending_approval) {
+      isPendingTenant = true;
+      // Disable Rent and Profile nav
+      const rentsNav = document.getElementById('nav-rents');
+      const profileNav = document.getElementById('nav-profile');
+      if (rentsNav) { rentsNav.classList.add('opacity-30', 'pointer-events-none'); rentsNav.onclick = null; }
+      if (profileNav) { profileNav.classList.add('opacity-30', 'pointer-events-none'); profileNav.onclick = null; }
+
+      document.getElementById('main').innerHTML = `
+        <div class="mt-8 text-center">
+          <div class="bg-white p-6 rounded-2xl border border-sand shadow-card max-w-sm mx-auto">
+            <div class="w-16 h-16 bg-warm rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined text-3xl text-amber">hourglass_top</span>
+            </div>
+            <h2 class="font-display text-xl font-black text-dark mb-2">Application Under Review</h2>
+            <p class="text-sm text-mid mb-4">Hi <strong>${data.candidate_name || user.name}</strong>, your onboarding application has been submitted successfully.</p>
+            <div class="bg-warm rounded-xl p-4 mb-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-mid">Status</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber text-white">Pending Approval</span>
+              </div>
+              ${data.application_date ? `<div class="flex items-center justify-between">
+                <span class="text-xs text-mid">Submitted</span>
+                <span class="text-xs font-bold text-dark">${fmtDate(data.application_date)}</span>
+              </div>` : ''}
+            </div>
+            <p class="text-xs text-mid">Our team will review your documents and assign you a room. You'll be notified once approved.</p>
+            <button onclick="loadSection('home')" class="mt-4 text-xs text-amber font-bold hover:underline">↻ Refresh Status</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const t = data.tenant;
+    const rent = data.current_rent;
+    const roommates = data.roommates || [];
+    const bed = t?.current_bed_allocation?.bed;
+    const room = bed?.room;
+
+    document.getElementById('main').innerHTML = `
+      <!-- Welcome -->
+      <div class="mt-5 mb-5">
+        <p class="text-xs text-mid uppercase tracking-widest font-semibold">Welcome back,</p>
+        <h2 class="font-display text-2xl font-black text-dark mt-0.5">${user.name}</h2>
+        <p class="text-sm text-mid mt-1">
+          <span class="font-mono text-amber bg-warm px-1.5 py-0.5 rounded text-xs">${t?.tenant_id || '—'}</span>
+          &nbsp;• ${t?.pg_location?.name || ''} ${room ? '• Room ' + room.room_number + ', Bed ' + bed.bed_number : ''}
+        </p>
+      </div>
+
+      <!-- Rent Hero -->
+      ${rent ? (() => {
+        const pendingSub = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
+        const rentPlusElec = parseInt(rent.total_amount) + parseInt(data.pending_electricity || 0);
+        let statusBadge = '';
+        let statusClass = '';
+        let showUpload = true;
+
+        if (rent.status === 'paid') {
+          statusBadge = 'paid';
+          statusClass = 'bg-success text-white';
+          showUpload = false;
+        } else if (pendingSub) {
+          statusBadge = 'in progress';
+          statusClass = 'bg-amber text-white';
+          showUpload = false;
+        } else {
+          statusBadge = 'unpaid';
+          statusClass = 'bg-danger text-white';
+        }
+
+        return `
+      <div class="bg-dark rounded-2xl p-5 mb-5 shadow-card-hover relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-amber/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div class="relative z-10">
+          <p class="text-[10px] font-semibold tracking-widest uppercase text-light">${new Date(rent.billing_month).toLocaleString('en-IN', {month:'long',year:'numeric'})} Rent + Electricity</p>
+          <div class="flex items-end justify-between mt-2">
+            <div>
+              <h3 class="font-display text-3xl font-black text-white">₹${rentPlusElec.toLocaleString('en-IN')}</h3>
+              <p class="text-xs text-light mt-1">Rent ₹${parseInt(rent.total_amount).toLocaleString('en-IN')} + Ele ₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</p>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${statusClass}">${statusBadge}</span>
+          </div>
+          ${showUpload ? `
+          <div class="mt-4 space-y-2">
+            <button onclick="uploadPaymentCombined(${rent.id}, ${parseInt(rent.total_amount)}, ${parseInt(data.pending_electricity || 0)})" class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
+              <span class="material-symbols-outlined text-lg">upload</span>Pay Rent + Electricity (₹${rentPlusElec.toLocaleString('en-IN')})
+            </button>
+            <div class="flex gap-2">
+              <button onclick="uploadPaymentRentOnly(${rent.id}, ${parseInt(rent.total_amount)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
+                Pay Rent Only (₹${parseInt(rent.total_amount).toLocaleString('en-IN')})
+              </button>
+              ${parseInt(data.pending_electricity || 0) > 0 ? `
+              <button onclick="uploadPaymentElecOnly(${rent.id}, ${parseInt(data.pending_electricity)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
+                Pay Elec Only (₹${parseInt(data.pending_electricity).toLocaleString('en-IN')})
+              </button>` : ''}
+            </div>
+          </div>` : pendingSub ? `
+          <div class="mt-4 w-full bg-white/10 text-white/80 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-lg">hourglass_top</span>Payment under verification
+          </div>` : ''}
+        </div>
+      </div>`;
+      })() : '<p class="text-mid text-sm mb-5">No rent generated yet.</p>'}
+
+      <!-- Info Cards -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="material-symbols-outlined text-amber text-lg">electric_bolt</span>
+            <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Electricity</p>
+          </div>
+          <h4 class="font-display text-lg font-black text-dark">₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</h4>
+          <p class="text-[10px] text-mid">${data.pending_electricity > 0 ? 'Pending' : 'All clear'}</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-amber text-lg">group</span>
+            <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Roommates</p>
+          </div>
+          ${roommates.length > 0 ? `
+          <div class="space-y-2">
+            ${roommates.map(r => `
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-dark">${r.user?.name || r.tenant_id}</span>
+                <a href="tel:${r.user?.mobile || ''}" class="text-[10px] text-amber font-semibold">${r.user?.mobile || ''}</a>
+              </div>`).join('')}
+          </div>` : '<p class="text-sm font-bold text-dark">None</p>'}
+        </div>
+      </div>
+
+      <!-- Referral -->
+      ${t?.referral_code ? `
+      <div class="bg-white p-4 rounded-2xl border border-sand shadow-card mb-5">
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-mid mb-1">Your Referral Code</p>
+        <p class="font-mono text-lg font-black text-amber">${t.referral_code}</p>
+        <p class="text-xs text-mid mt-1">Share with friends joining PG A1</p>
+      </div>` : ''}
+
+      <!-- New Tenant First Payment -->
+      ${(() => {
+        if (!t?.joining_date) return '';
+        const joinDate = new Date(t.joining_date);
+        const twoMonthsAgo = new Date();
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+        if (joinDate < twoMonthsAgo) return '';
+
+        const fps = data.first_payments || [];
+        const rentAmt = parseInt(t.current_rent || 0);
+        const securityAmt = parseInt(t.security_deposit || 0);
+
+        const rentPayment = fps.find(p => p.transaction_reference === 'first_rent' || p.transaction_reference === 'first_both');
+        const securityPayment = fps.find(p => p.transaction_reference === 'first_security' || p.transaction_reference === 'first_both');
+        const anyPayment = fps.length > 0 && !rentPayment && !securityPayment ? fps[0] : null;
+        const rentPaid = rentPayment || anyPayment;
+        const secPaid = securityPayment || anyPayment;
+
+        if (rentPaid && secPaid) {
+          const fp = fps[0];
+          const fpClass = fp.status === 'verified' ? 'text-success bg-success-bg' : fp.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm';
+          return `<div class="bg-white p-4 rounded-2xl border-2 ${fp.status === 'verified' ? 'border-success' : 'border-amber'} shadow-card mb-5">
+            <div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">${fp.status === 'verified' ? 'check_circle' : 'hourglass_top'}</span><p class="text-[10px] font-semibold tracking-widest uppercase ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">First Payment</p></div>
+            ${fps.map(p => `<div class="flex items-center justify-between mb-1"><p class="text-xs font-bold text-dark">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'verified' ? 'text-success bg-success-bg' : p.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'}">${p.status === 'verified' ? 'Verified' : p.status === 'rejected' ? 'Rejected' : 'Pending'}</span></div>`).join('')}
+          </div>`;
+        }
+
+        let cards = '';
+        if (rentPaid) { const st = rentPaid.status === 'verified' ? 'Verified' : rentPaid.status === 'rejected' ? 'Rejected' : 'Pending'; const cls = rentPaid.status === 'verified' ? 'text-success bg-success-bg' : rentPaid.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'; cards += `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">First Month Rent</p><p class="text-[10px] text-mid">₹${rentAmt.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${st}</span></div>`; }
+        else { cards += `<div class="flex items-center justify-between p-3 bg-danger-bg/30 rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">First Month Rent</p><p class="text-[10px] text-danger">₹${rentAmt.toLocaleString('en-IN')} — Unpaid</p></div><button onclick="uploadFirstType('first_rent', ${rent ? rent.id : 0}, ${rentAmt})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Upload</button></div>`; }
+
+        if (securityAmt > 0) {
+          if (secPaid) { const st = secPaid.status === 'verified' ? 'Verified' : secPaid.status === 'rejected' ? 'Rejected' : 'Pending'; const cls = secPaid.status === 'verified' ? 'text-success bg-success-bg' : secPaid.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'; cards += `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">Security Deposit</p><p class="text-[10px] text-mid">₹${securityAmt.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${st}</span></div>`; }
+          else { cards += `<div class="flex items-center justify-between p-3 bg-danger-bg/30 rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">Security Deposit</p><p class="text-[10px] text-danger">₹${securityAmt.toLocaleString('en-IN')} — Unpaid</p></div><button onclick="uploadFirstType('first_security', ${rent ? rent.id : 0}, ${securityAmt})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Upload</button></div>`; }
+        }
+
+        if (!rentPaid && !secPaid) { return `<div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5"><div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-amber">new_releases</span><p class="text-[10px] font-semibold tracking-widest uppercase text-amber">New Tenant – First Payment</p></div><p class="text-xs text-mid mb-3">Upload your first payment screenshot.</p><div class="text-xs text-dark space-y-1 mb-3"><p>Monthly Rent: <span class="font-bold">₹${rentAmt.toLocaleString('en-IN')}</span></p>${securityAmt > 0 ? `<p>Security Deposit: <span class="font-bold">₹${securityAmt.toLocaleString('en-IN')}</span></p>` : ''}<p class="font-bold text-amber">Total: ₹${(rentAmt + securityAmt).toLocaleString('en-IN')}</p></div><button onclick="showFirstPaymentModal(${rent ? rent.id : 0}, ${rentAmt}, ${securityAmt})" class="w-full bg-amber text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]"><span class="material-symbols-outlined text-lg">upload</span>Upload First Payment</button></div>`; }
+
+        return `<div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5"><div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-amber">new_releases</span><p class="text-[10px] font-semibold tracking-widest uppercase text-amber">First Payment Status</p></div>${cards}</div>`;
+      })()}
+    `;
+  } catch (err) {
+    document.getElementById('main').innerHTML = `<p class="text-danger text-center mt-8">Failed to load dashboard. <button onclick="loadSection('home')" class="text-amber font-bold">Retry</button></p>`;
+  }
+}
+
+async function renderRents() {
+  try {
+    const data = await api.tenantRents();
+    const rents = data.rents || [];
+
+    // Group rents by year
+    const years = {};
+    rents.forEach(r => {
+      const d = new Date(r.billing_month);
+      const year = d.getFullYear();
+      if (!years[year]) years[year] = [];
+      years[year].push(r);
+    });
+
+    // Get electricity allocations
+    let elecData = {};
+    try {
+      const eResp = await api.get('/tenant/electricity');
+      (eResp.allocations || []).forEach(a => {
+        const bill = a.electricity_bill;
+        if (bill) {
+          const key = new Date(bill.billing_month).toISOString().slice(0,7); // YYYY-MM
+          elecData[key] = {
+            amount: parseFloat(a.amount),
+            status: a.status,
+            billId: bill.id,
+            totalAmount: parseFloat(bill.total_amount),
+            totalUnits: parseFloat(bill.total_units),
+            ratePerUnit: parseFloat(bill.rate_per_unit),
+            tenantsCount: bill.active_tenants_count,
+            previousReading: bill.previous_reading,
+            currentReading: bill.current_reading,
+            hasPrevImage: !!bill.previous_meter_image,
+            hasCurrImage: !!bill.current_meter_image,
+          };
+        }
+      });
+    } catch(e) {}
+
+    const currentYear = new Date().getFullYear();
+    const sortedYears = Object.keys(years).sort((a,b) => b - a);
+    if (sortedYears.length === 0) sortedYears.push(currentYear);
+
+    document.getElementById('main').innerHTML = `
+      <h2 class="font-display text-xl font-black text-dark mt-5 mb-4">Rent History</h2>
+      ${sortedYears.length === 0 && rents.length === 0 ? '<p class="text-mid text-center py-8">No rent records yet.</p>' : ''}
+      ${sortedYears.map(year => {
+        const yearRents = years[year] || [];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        return `
+        <div class="mb-6">
+          <h3 class="font-display text-lg font-bold text-amber mb-3">${year}</h3>
+          <div class="grid grid-cols-2 gap-3">
+            ${months.map((monthName, idx) => {
+              const monthStr = `${year}-${String(idx+1).padStart(2,'0')}`;
+              const rent = yearRents.find(r => new Date(r.billing_month).getMonth() === idx);
+              const elec = elecData[monthStr];
+
+              if (!rent) return ''; // Don't show months without rent records
+
+              const isPaid = rent.status === 'paid';
+              const statusColor = isPaid ? 'text-success bg-success-bg' : rent.status === 'partially_paid' ? 'text-amber bg-warm' : 'text-danger bg-danger-bg';
+              const statusLabel = rent.status.replace('_',' ');
+              const elecAmount = elec ? `₹${parseInt(elec.amount)}` : '—';
+              const elecSplitInfo = elec && elec.tenantsCount > 1 ? ` (÷${elec.tenantsCount})` : '';
+
+              // Check if payment is pending verification
+              const pendingPayment = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
+              const rejectedPayment = (rent.payment_submissions || []).find(ps => ps.status === 'rejected');
+
+              return `
+              <div class="bg-white p-4 rounded-2xl border border-sand shadow-card ${isPaid ? 'opacity-90' : ''}">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-sm font-bold text-dark">${monthName}</h4>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor}">${statusLabel}</span>
+                </div>
+                <div class="space-y-1.5 mb-3">
+                  <div class="flex justify-between">
+                    <span class="text-[10px] text-mid">Rent</span>
+                    <span class="text-xs font-bold text-dark">₹${parseInt(rent.total_amount).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-[10px] text-mid">Ele Bill${elecSplitInfo}</span>
+                    <span class="text-xs font-bold text-dark">${elecAmount}</span>
+                  </div>
+                  ${elec ? `<div class="text-[9px] text-light">${elec.previousReading && elec.currentReading ? elec.previousReading + ' → ' + elec.currentReading + ' = ' + elec.totalUnits + ' units' : elec.totalUnits + ' units'} × ₹${elec.ratePerUnit}</div>
+                  ${elec.hasPrevImage || elec.hasCurrImage ? '<button onclick="viewMeterImages(' + elec.billId + ')" class="text-[10px] text-amber font-semibold hover:underline">📷 View Meter</button>' : ''}` : ''}
+                </div>
+                ${isPaid ? `
+                <div class="w-full bg-success-bg text-success py-2 rounded-lg text-[11px] font-bold text-center">
+                  <span class="material-symbols-outlined text-sm align-middle">check_circle</span> Paid
+                </div>` : pendingPayment ? `
+                <div class="w-full bg-warm text-amber py-2 rounded-lg text-[11px] font-bold text-center">
+                  <span class="material-symbols-outlined text-sm align-middle">hourglass_top</span> Verification Pending
+                </div>` : rejectedPayment ? `
+                <div class="w-full bg-danger-bg text-danger py-2 rounded-lg text-[10px] font-bold text-center mb-2">
+                  <span class="material-symbols-outlined text-sm align-middle">error</span> Rejected: ${rejectedPayment.rejection_reason || 'Try again'}
+                </div>
+                <button onclick="uploadPaymentForMonth(${rent.id}, '${monthName} ${year}')"
+                  class="w-full bg-amber text-white py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-amber-hover transition-all active:scale-[0.97]">
+                  <span class="material-symbols-outlined text-sm">upload</span>Re-upload Payment
+                </button>` : `
+                <button onclick="uploadPaymentForMonth(${rent.id}, '${monthName} ${year}')"
+                  class="w-full bg-amber text-white py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-amber-hover transition-all active:scale-[0.97]">
+                  <span class="material-symbols-outlined text-sm">upload</span>Upload Payment
+                </button>`}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+  } catch(err) {
+    document.getElementById('main').innerHTML = '<p class="text-danger text-center mt-8">Failed to load. <button onclick="loadSection(\'rents\')" class="text-amber font-bold">Retry</button></p>';
+  }
+}
+
+function uploadPaymentForMonth(rentId, monthLabel) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Show inline modal for amount and method
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
+        <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
+        <p class="text-xs text-mid mb-4">${monthLabel} — Rent + Electricity Bill</p>
+        <div class="mb-3">
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
+          <input type="number" id="pay-amount" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" placeholder="Total amount paid" />
+        </div>
+        <div class="mb-3">
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
+          <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
+            <option value="upi">UPI</option>
+            <option value="gpay">GPay</option>
+            <option value="phonepe">PhonePe</option>
+            <option value="paytm">Paytm</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cash">Cash</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <p class="text-[10px] text-mid mb-1">Screenshot: <span class="font-bold text-dark">${file.name}</span></p>
+        </div>
+        <div class="flex gap-2">
+          <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
+          <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('pay-cancel').onclick = () => overlay.remove();
+    document.getElementById('pay-submit').onclick = async () => {
+      const amount = document.getElementById('pay-amount').value;
+      const method = document.getElementById('pay-method').value;
+      if (!amount || parseFloat(amount) <= 0) { alert('Please enter payment amount'); return; }
+
+      const formData = new FormData();
+      if (rentId) formData.append('monthly_rent_id', rentId);
+      formData.append('claimed_amount', amount);
+      formData.append('payment_method', method);
+      formData.append('screenshot', file);
+
+      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
+
+      try {
+        await api.submitPayment(formData);
+        overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
+        setTimeout(() => { overlay.remove(); loadSection('rents'); }, 1500);
+      } catch(err) {
+        overlay.remove();
+        alert('Error: ' + (err.data?.message || 'Upload failed'));
+      }
+    };
+  };
+  input.click();
+}
+
+async function renderProfile() {
+  try {
+    const data = await api.tenantProfile();
+    const p = data.profile;
+    document.getElementById('main').innerHTML = `
+      <h2 class="font-display text-xl font-black text-dark mt-5 mb-4">My Profile</h2>
+      <div class="bg-white p-5 rounded-2xl border border-sand shadow-card">
+        <div class="space-y-3">
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">Name</span><span class="text-sm font-bold text-dark">${user.name}</span></div>
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">Tenant ID</span><span class="text-sm font-mono font-bold text-amber">${p.tenant_id}</span></div>
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">Mobile</span><span class="text-sm font-bold text-dark">${user.mobile}</span></div>
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">PG Location</span><span class="text-sm font-bold text-dark">${p.pg_location?.name || '—'}</span></div>
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">Current Rent</span><span class="text-sm font-bold text-dark">₹${parseInt(p.current_rent).toLocaleString('en-IN')}</span></div>
+          <div class="flex justify-between py-2 border-b border-sand/50"><span class="text-xs text-mid">Joining Date</span><span class="text-sm font-bold text-dark">${fmtDate(p.joining_date)}</span></div>
+          <div class="flex justify-between py-2"><span class="text-xs text-mid">Status</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status==='active' ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'}">${p.status}</span></div>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      ${p.documents && p.documents.length > 0 ? `
+      <h3 class="font-display text-lg font-bold text-dark mt-6 mb-3">Documents</h3>
+      <div class="space-y-2">
+        ${p.documents.map(d => `
+          <div class="bg-white p-3 rounded-xl border border-sand flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-sm ${d.verification_status==='verified' ? 'text-success' : d.verification_status==='correction_required' ? 'text-danger' : 'text-amber'}">${d.verification_status==='verified' ? 'verified' : d.verification_status==='correction_required' ? 'error' : 'pending'}</span>
+              <span class="text-sm text-dark capitalize">${d.document_type.replace('_',' ')}</span>
+            </div>
+            <span class="text-[10px] font-bold ${d.verification_status==='verified' ? 'text-success' : d.verification_status==='correction_required' ? 'text-danger' : 'text-amber'}">${d.verification_status.replace('_',' ')}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    `;
+  } catch(err) {
+    document.getElementById('main').innerHTML = '<p class="text-danger text-center mt-8">Failed to load profile.</p>';
+  }
+}
+
+function uploadPayment(rentId) {
+  uploadPaymentForMonth(rentId, 'Current Month');
+}
+
+function uploadPaymentCombined(rentId, rentAmount, elecAmount) {
+  const totalAmount = rentAmount + elecAmount;
+  showPaymentUploadModal(rentId, `Rent (₹${rentAmount.toLocaleString('en-IN')}) + Electricity (₹${elecAmount.toLocaleString('en-IN')})`, totalAmount);
+}
+
+function uploadPaymentRentOnly(rentId, rentAmount) {
+  showPaymentUploadModal(rentId, 'Rent Only', rentAmount);
+}
+
+function uploadPaymentElecOnly(rentId, elecAmount) {
+  showPaymentUploadModal(rentId, 'Electricity Only', elecAmount);
+}
+
+function showPaymentUploadModal(rentId, label, suggestedAmount) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
+        <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
+        <p class="text-xs text-mid mb-4">${label}</p>
+        <div class="mb-3">
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
+          <input type="number" id="pay-amount" value="${suggestedAmount}" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" />
+        </div>
+        <div class="mb-3">
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
+          <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
+            <option value="upi">UPI</option>
+            <option value="gpay">GPay</option>
+            <option value="phonepe">PhonePe</option>
+            <option value="paytm">Paytm</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cash">Cash</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <p class="text-[10px] text-mid mb-1">Screenshot: <span class="font-bold text-dark">${file.name}</span></p>
+        </div>
+        <div class="flex gap-2">
+          <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
+          <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('pay-cancel').onclick = () => overlay.remove();
+    document.getElementById('pay-submit').onclick = async () => {
+      const amount = document.getElementById('pay-amount').value;
+      const method = document.getElementById('pay-method').value;
+      if (!amount || parseFloat(amount) <= 0) { alert('Please enter payment amount'); return; }
+
+      const formData = new FormData();
+      if (rentId) formData.append('monthly_rent_id', rentId);
+      formData.append('claimed_amount', amount);
+      formData.append('payment_method', method);
+      formData.append('screenshot', file);
+
+      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
+
+      try {
+        await api.submitPayment(formData);
+        overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
+        setTimeout(() => { overlay.remove(); loadSection('home'); }, 1500);
+      } catch(err) {
+        overlay.remove();
+        alert('Error: ' + (err.data?.message || 'Upload failed'));
+      }
+    };
+  };
+  input.click();
+}
+
+function showFirstPaymentModal(rentId, rentAmt, securityAmt) {
+  const totalAmt = rentAmt + securityAmt;
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
+      <h3 class="font-display text-lg font-bold text-dark mb-1">First Payment</h3>
+      <p class="text-xs text-mid mb-4">What have you paid?</p>
+      <div class="space-y-2 mb-4">
+        <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-amber hover:bg-warm" id="fp-opt-both">
+          <input type="radio" name="fp-type" value="both" checked onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
+          <div><p class="text-sm font-bold text-dark">Rent + Security Deposit</p><p class="text-xs text-mid">\u20B9${rentAmt.toLocaleString('en-IN')} + \u20B9${securityAmt.toLocaleString('en-IN')} = \u20B9${totalAmt.toLocaleString('en-IN')}</p></div>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-transparent hover:bg-warm" id="fp-opt-rent">
+          <input type="radio" name="fp-type" value="rent" onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
+          <div><p class="text-sm font-bold text-dark">Only Rent</p><p class="text-xs text-mid">\u20B9${rentAmt.toLocaleString('en-IN')}</p></div>
+        </label>
+        ${securityAmt > 0 ? `<label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-transparent hover:bg-warm" id="fp-opt-security">
+          <input type="radio" name="fp-type" value="security" onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
+          <div><p class="text-sm font-bold text-dark">Only Security Deposit</p><p class="text-xs text-mid">\u20B9${securityAmt.toLocaleString('en-IN')}</p></div>
+        </label>` : ''}
+      </div>
+      <div class="flex gap-2">
+        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
+        <button onclick="proceedFirstPayment(${rentId}, ${rentAmt}, ${securityAmt})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Upload Screenshot</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function updateFpSelection() {
+  ['fp-opt-both', 'fp-opt-rent', 'fp-opt-security'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('border-amber'); el.classList.add('border-transparent'); }
+  });
+  const selected = document.querySelector('input[name="fp-type"]:checked')?.value;
+  const activeId = selected === 'both' ? 'fp-opt-both' : selected === 'rent' ? 'fp-opt-rent' : 'fp-opt-security';
+  const activeEl = document.getElementById(activeId);
+  if (activeEl) { activeEl.classList.add('border-amber'); activeEl.classList.remove('border-transparent'); }
+}
+
+function proceedFirstPayment(rentId, rentAmt, securityAmt) {
+  const type = document.querySelector('input[name="fp-type"]:checked')?.value || 'both';
+  let amount = rentAmt + securityAmt;
+  let label = 'Rent + Security Deposit';
+  let refTag = 'first_both';
+  if (type === 'rent') { amount = rentAmt; label = 'First Month Rent Only'; refTag = 'first_rent'; }
+  if (type === 'security') { amount = securityAmt; label = 'Security Deposit Only'; refTag = 'first_security'; }
+  document.querySelector('.fixed.inset-0')?.remove();
+  showPaymentUploadModalWithRef(rentId || 0, label, amount, refTag);
+}
+
+function uploadFirstType(refTag, rentId, amount) {
+  const label = refTag === 'first_rent' ? 'First Month Rent' : 'Security Deposit';
+  showPaymentUploadModalWithRef(rentId || 0, label, amount, refTag);
+}
+
+function showPaymentUploadModalWithRef(rentId, label, suggestedAmount, refTag) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0]; if (!file) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    overlay.innerHTML = `<div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover"><h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3><p class="text-xs text-mid mb-4">${label}</p><div class="mb-3"><label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Amount (₹)</label><input type="number" id="pay-amount" value="${suggestedAmount}" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" /></div><div class="mb-3"><label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Method</label><select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none"><option value="upi">UPI</option><option value="gpay">GPay</option><option value="phonepe">PhonePe</option><option value="paytm">Paytm</option><option value="bank_transfer">Bank Transfer</option><option value="cash">Cash</option></select></div><div class="mb-4"><p class="text-[10px] text-mid">File: <span class="font-bold text-dark">${file.name}</span></p></div><div class="flex gap-2"><button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button><button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button></div></div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('pay-cancel').onclick = () => overlay.remove();
+    document.getElementById('pay-submit').onclick = async () => {
+      const amount = document.getElementById('pay-amount').value;
+      const method = document.getElementById('pay-method').value;
+      if (!amount || parseFloat(amount) <= 0) { alert('Enter amount'); return; }
+      const formData = new FormData();
+      if (rentId) formData.append('monthly_rent_id', rentId);
+      formData.append('claimed_amount', amount); formData.append('payment_method', method);
+      formData.append('screenshot', file); formData.append('transaction_reference', refTag);
+      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
+      try { await api.submitPayment(formData); overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Submitted!</p></div>'; setTimeout(() => { overlay.remove(); loadSection('home'); }, 1500); }
+      catch(err) { overlay.remove(); alert('Error: ' + (err.data?.message || 'Failed')); }
+    };
+  };
+  input.click();
+}
+
+async function viewMeterImages(billId) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto shadow-card-hover">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-display text-lg font-bold text-dark">Meter Readings</h3>
+        <button onclick="this.closest('.fixed').remove()" class="text-mid text-xl font-bold hover:text-dark">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Previous Reading</p>
+          <div class="border border-sand rounded-xl overflow-hidden bg-warm" id="meter-prev-${billId}">
+            <p class="p-3 text-xs text-mid text-center">Loading...</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Current Reading</p>
+          <div class="border border-sand rounded-xl overflow-hidden bg-warm" id="meter-curr-${billId}">
+            <p class="p-3 text-xs text-mid text-center">Loading...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Load meter images
+  loadMeterImage(billId, 'previous', `meter-prev-${billId}`);
+  loadMeterImage(billId, 'current', `meter-curr-${billId}`);
+}
+
+async function loadMeterImage(billId, type, containerId) {
+  const container = document.getElementById(containerId);
+  try {
+    const resp = await fetch(`${API_BASE}/tenant/electricity/${billId}/meter-image/${type}`, {
+      headers: { 'Authorization': `Bearer ${api.getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Not found');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    container.innerHTML = `<img src="${url}" alt="${type} meter" class="w-full rounded-xl" />`;
+  } catch(e) {
+    container.innerHTML = `<p class="p-3 text-xs text-mid text-center">No ${type} meter image</p>`;
+  }
+}
+
+// Boot
+loadSection('home');
+</script>
+</body>
+</html>

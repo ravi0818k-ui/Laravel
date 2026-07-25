@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | Super Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#faf6f0',
+            warm: '#f2ebe0',
+            sand: '#e8d8c4',
+            amber: '#c8813a',
+            'amber-hover': '#e09a50',
+            dark: '#1a1410',
+            charcoal: '#3d3028',
+            mid: '#7a6655',
+            light: '#b8a898',
+            success: '#2d6a4f',
+            'success-bg': '#d8f3dc',
+            danger: '#c1121f',
+            'danger-bg': '#fde8e8',
+            info: '#1d4ed8',
+            'info-bg': '#dbeafe',
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['DM Sans', 'sans-serif'],
+            brand: ['Roboto', 'sans-serif'],
+          },
+          boxShadow: {
+            card: '0 4px 32px rgba(26, 20, 16, 0.10)',
+            'card-hover': '0 12px 48px rgba(26, 20, 16, 0.18)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .sidebar-scrollbar::-webkit-scrollbar { width: 4px; }
+    .sidebar-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-scrollbar::-webkit-scrollbar-thumb { background: rgba(200,129,58,0.3); border-radius: 10px; }
+  </style>
+</head>
+<body class="bg-cream text-charcoal">
+
+<!-- Sidebar -->
+<aside class="fixed h-screen w-60 left-0 top-0 bg-dark border-r border-charcoal flex flex-col z-40">
+  <div class="p-6">
+    <div class="flex items-end gap-0">
+      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+    </div>
+    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Super Admin</p>
+  </div>
+  <nav class="flex-1 mt-2 sidebar-scrollbar overflow-y-auto">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined text-amber">dashboard</span>
+      <span class="text-sm font-medium">Dashboard</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">location_city</span>
+      <span class="text-sm font-medium">PG Locations</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">admin_panel_settings</span>
+      <span class="text-sm font-medium">Admins</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">groups</span>
+      <span class="text-sm font-medium">All Tenants</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="text-sm font-medium">Finances</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">person_add</span>
+      <span class="text-sm font-medium">Onboarding</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">electric_bolt</span>
+      <span class="text-sm font-medium">Electricity</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">support_agent</span>
+      <span class="text-sm font-medium">Concerns</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">history</span>
+      <span class="text-sm font-medium">Activity Logs</span>
+    </a>
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" href="#">
+      <span class="material-symbols-outlined">settings</span>
+      <span class="text-sm font-medium">Settings</span>
+    </a>
+  </nav>
+  <div class="p-4 border-t border-charcoal">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm">SA</div>
+      <div>
+        <p class="text-sm font-bold text-white">Super Admin</p>
+        <p class="text-[10px] tracking-wider uppercase text-light">System Owner</p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Top Header -->
+<header class="fixed top-0 right-0 left-60 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-6 z-30">
+  <div class="flex items-center gap-4 w-1/3">
+    <div class="relative w-full max-w-sm">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-light text-lg">search</span>
+      <input class="w-full bg-warm text-sm px-10 py-2 rounded-lg border border-sand focus:ring-2 focus:ring-amber focus:border-amber outline-none transition-all" placeholder="Search tenants, payments, PGs..." type="text" />
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <button class="p-2 text-mid hover:text-amber hover:bg-warm rounded-full transition-all relative">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
+    </button>
+    <button class="p-2 text-mid hover:text-amber hover:bg-warm rounded-full transition-all">
+      <span class="material-symbols-outlined">dark_mode</span>
+    </button>
+    <div class="h-6 w-px bg-sand"></div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold text-charcoal">PG A1 Management</span>
+      <span class="text-[10px] bg-amber text-white px-2 py-0.5 rounded-full font-bold">v1.0</span>
+    </div>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="ml-60 pt-16 min-h-screen p-6">
+  <!-- Page Header -->
+  <div class="mb-8 flex justify-between items-end">
+    <div>
+      <h2 class="font-display text-3xl font-black text-dark tracking-tight">Super Admin Dashboard</h2>
+      <p class="text-sm text-mid mt-1">Real-time overview across all PG locations.</p>
+    </div>
+    <button class="bg-amber text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-amber-hover transition-all active:scale-95 shadow-card font-semibold text-sm">
+      <span class="material-symbols-outlined text-lg">add</span>
+      Add New PG
+    </button>
+  </div>
+
+  <!-- Metrics Row -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <!-- Total PGs -->
+    <div class="bg-white p-5 rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-shadow">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[11px] font-semibold tracking-[0.14em] uppercase text-mid">Total PG Locations</p>
+          <h3 class="font-display text-3xl font-black text-dark mt-1">5</h3>
+          <p class="text-xs text-success font-medium mt-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">trending_up</span>All active
+          </p>
+        </div>
+        <div class="bg-warm p-2.5 rounded-xl">
+          <span class="material-symbols-outlined text-amber">location_city</span>
+        </div>
+      </div>
+    </div>
+    <!-- Total Beds -->
+    <div class="bg-white p-5 rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-shadow">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[11px] font-semibold tracking-[0.14em] uppercase text-mid">Total Beds</p>
+          <h3 class="font-display text-3xl font-black text-dark mt-1">120</h3>
+          <p class="text-xs text-mid mt-2">Across all locations</p>
+        </div>
+        <div class="bg-warm p-2.5 rounded-xl">
+          <span class="material-symbols-outlined text-amber">bed</span>
+        </div>
+      </div>
+    </div>
+    <!-- Occupancy -->
+    <div class="bg-white p-5 rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-shadow">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[11px] font-semibold tracking-[0.14em] uppercase text-mid">Occupancy Rate</p>
+          <h3 class="font-display text-3xl font-black text-dark mt-1">92%</h3>
+          <div class="w-full bg-sand h-1.5 rounded-full mt-3">
+            <div class="bg-success h-1.5 rounded-full transition-all duration-1000" style="width: 92%"></div>
+          </div>
+        </div>
+        <div class="bg-success-bg p-2.5 rounded-xl">
+          <span class="material-symbols-outlined text-success">person_pin_circle</span>
+        </div>
+      </div>
+    </div>
+    <!-- Pending Actions -->
+    <div class="bg-white p-5 rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-shadow">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[11px] font-semibold tracking-[0.14em] uppercase text-mid">Pending Verifications</p>
+          <h3 class="font-display text-3xl font-black text-danger mt-1">7</h3>
+          <p class="text-xs text-danger font-medium mt-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">warning</span>Requires attention
+          </p>
+        </div>
+        <div class="bg-danger-bg p-2.5 rounded-xl">
+          <span class="material-symbols-outlined text-danger">pending_actions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-12 gap-5">
+    <!-- Financial Health -->
+    <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-5 border-b border-sand pb-3">
+        <h4 class="font-display text-xl font-bold text-dark">Financial Overview</h4>
+        <select class="text-sm border border-sand bg-warm rounded-lg px-3 py-1.5 text-charcoal focus:ring-amber focus:border-amber">
+          <option>July 2026</option>
+          <option>June 2026</option>
+          <option>Last Quarter</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div class="space-y-4">
+          <div class="p-4 bg-warm rounded-xl">
+            <p class="text-[11px] font-semibold tracking-widest uppercase text-mid">Rent Collected</p>
+            <h5 class="font-display text-2xl font-bold text-success mt-1">₹9,60,000</h5>
+            <p class="text-xs text-mid mt-1">92% of expected</p>
+          </div>
+          <div class="p-4 bg-warm rounded-xl">
+            <p class="text-[11px] font-semibold tracking-widest uppercase text-mid">Expected Revenue</p>
+            <h5 class="font-display text-2xl font-bold text-dark mt-1">₹10,40,000</h5>
+            <p class="text-xs text-mid mt-1">120 active tenants × avg rent</p>
+          </div>
+          <div class="p-4 bg-danger-bg rounded-xl">
+            <p class="text-[11px] font-semibold tracking-widest uppercase text-mid">Pending Dues</p>
+            <h5 class="font-display text-2xl font-bold text-danger mt-1">₹80,000</h5>
+            <p class="text-xs text-danger mt-1">8 tenants overdue</p>
+          </div>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="relative w-44 h-44 flex items-center justify-center">
+            <svg class="w-full h-full -rotate-90">
+              <circle cx="88" cy="88" r="72" fill="transparent" stroke="#e8d8c4" stroke-width="14"></circle>
+              <circle cx="88" cy="88" r="72" fill="transparent" stroke="#c8813a" stroke-width="14" stroke-dasharray="452" stroke-dashoffset="36" stroke-linecap="round" class="transition-all duration-1000"></circle>
+            </svg>
+            <div class="absolute text-center">
+              <span class="font-display text-3xl font-black text-dark">92%</span>
+              <p class="text-[10px] uppercase tracking-wider text-mid font-semibold">Collected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Occupancy by Location -->
+    <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-5 border-b border-sand pb-3">
+        <h4 class="font-display text-xl font-bold text-dark">Occupancy by PG</h4>
+        <span class="material-symbols-outlined text-mid cursor-pointer hover:text-amber">more_horiz</span>
+      </div>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 hover:bg-warm transition-colors rounded-xl cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-warm text-amber flex items-center justify-center">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-dark">Shanti Nagar</p>
+              <p class="text-xs text-mid">24/26 Beds</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-success bg-success-bg px-2 py-1 rounded-lg">92%</span>
+        </div>
+        <div class="flex items-center justify-between p-3 hover:bg-warm transition-colors rounded-xl cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-warm text-amber flex items-center justify-center">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-dark">Jharsa Village</p>
+              <p class="text-xs text-mid">28/30 Beds</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-success bg-success-bg px-2 py-1 rounded-lg">93%</span>
+        </div>
+        <div class="flex items-center justify-between p-3 hover:bg-warm transition-colors rounded-xl cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-warm text-amber flex items-center justify-center">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-dark">Sector 46</p>
+              <p class="text-xs text-mid">30/32 Beds</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-success bg-success-bg px-2 py-1 rounded-lg">94%</span>
+        </div>
+        <div class="flex items-center justify-between p-3 hover:bg-warm transition-colors rounded-xl cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-warm text-amber flex items-center justify-center">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-dark">Saraswati Vihar</p>
+              <p class="text-xs text-mid">26/30 Beds</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-amber bg-warm px-2 py-1 rounded-lg">87%</span>
+        </div>
+        <div class="flex items-center justify-between p-3 hover:bg-warm transition-colors rounded-xl cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-warm text-amber flex items-center justify-center">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-dark">1BHK Saraswati Vihar</p>
+              <p class="text-xs text-mid">1/1 Units</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-success bg-success-bg px-2 py-1 rounded-lg">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Feed -->
+    <div class="col-span-12 bg-white p-6 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-5 border-b border-sand pb-3">
+        <h4 class="font-display text-xl font-bold text-dark">Recent Activity</h4>
+        <button class="text-sm text-mid flex items-center gap-1 hover:text-amber transition-colors">
+          <span class="material-symbols-outlined text-lg">filter_list</span>Filter
+        </button>
+      </div>
+      <div class="space-y-0">
+        <!-- Activity 1 -->
+        <div class="flex items-center gap-4 py-3 border-b border-sand/50 last:border-0 hover:bg-warm/50 px-3 rounded-lg transition-all cursor-pointer">
+          <div class="p-2 bg-success-bg text-success rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-lg">verified</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-charcoal"><span class="font-bold">Admin Ramesh</span> verified payment for <span class="font-mono text-amber bg-warm px-1.5 py-0.5 rounded text-xs">TSN0012</span></p>
+            <p class="text-xs text-light mt-0.5">15 minutes ago • Shanti Nagar PG</p>
+          </div>
+          <span class="text-sm font-bold text-success whitespace-nowrap">+ ₹8,000</span>
+        </div>
+        <!-- Activity 2 -->
+        <div class="flex items-center gap-4 py-3 border-b border-sand/50 last:border-0 hover:bg-warm/50 px-3 rounded-lg transition-all cursor-pointer">
+          <div class="p-2 bg-warm text-amber rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-lg">person_add</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-charcoal">New onboarding application from <span class="font-bold">Jharsa Village</span></p>
+            <p class="text-xs text-light mt-0.5">2 hours ago • Applicant: Vikash Kumar</p>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-warm text-amber px-2.5 py-1 rounded-full">Pending</span>
+        </div>
+        <!-- Activity 3 -->
+        <div class="flex items-center gap-4 py-3 border-b border-sand/50 last:border-0 hover:bg-warm/50 px-3 rounded-lg transition-all cursor-pointer">
+          <div class="p-2 bg-danger-bg text-danger rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-lg">report_problem</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-charcoal">Concern raised: <span class="font-bold text-danger">Water Leakage</span> in Room 204</p>
+            <p class="text-xs text-light mt-0.5">4 hours ago • Sector 46 PG</p>
+          </div>
+          <button class="text-xs font-bold text-amber border border-amber px-3 py-1 rounded-lg hover:bg-amber hover:text-white transition-all">Assign</button>
+        </div>
+        <!-- Activity 4 -->
+        <div class="flex items-center gap-4 py-3 border-b border-sand/50 last:border-0 hover:bg-warm/50 px-3 rounded-lg transition-all cursor-pointer">
+          <div class="p-2 bg-info-bg text-info rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-lg">electric_bolt</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-charcoal">Electricity bill generated for <span class="font-bold">Saraswati Vihar</span> — ₹4,200 split among 6 tenants</p>
+            <p class="text-xs text-light mt-0.5">Today, 10:30 AM • System</p>
+          </div>
+          <span class="material-symbols-outlined text-light">chevron_right</span>
+        </div>
+        <!-- Activity 5 -->
+        <div class="flex items-center gap-4 py-3 hover:bg-warm/50 px-3 rounded-lg transition-all cursor-pointer">
+          <div class="p-2 bg-warm text-mid rounded-full flex-shrink-0">
+            <span class="material-symbols-outlined text-lg">logout</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-charcoal"><span class="font-bold">TJV0008</span> offboarding completed — bed released</p>
+            <p class="text-xs text-light mt-0.5">Yesterday, 6:00 PM • Jharsa Village</p>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-success-bg text-success px-2.5 py-1 rounded-full">Done</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Management Quick View -->
+    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-5 border-b border-sand pb-3">
+        <h4 class="font-display text-xl font-bold text-dark">Admin Team</h4>
+        <button class="text-xs font-bold text-amber hover:underline">+ Add Admin</button>
+      </div>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 bg-warm rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-amber text-white flex items-center justify-center font-bold text-sm">RK</div>
+            <div>
+              <p class="text-sm font-bold text-dark">Ramesh Kumar</p>
+              <p class="text-xs text-mid">Shanti Nagar, Jharsa Village</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold uppercase bg-success-bg text-success px-2 py-1 rounded-full">Active</span>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-warm rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-charcoal text-white flex items-center justify-center font-bold text-sm">AK</div>
+            <div>
+              <p class="text-sm font-bold text-dark">Ajay Kumar</p>
+              <p class="text-xs text-mid">Sector 46, Saraswati Vihar</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold uppercase bg-success-bg text-success px-2 py-1 rounded-full">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-2xl border border-sand shadow-card">
+      <div class="flex justify-between items-center mb-5 border-b border-sand pb-3">
+        <h4 class="font-display text-xl font-bold text-dark">Quick Actions</h4>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button class="p-4 bg-warm rounded-xl hover:bg-sand transition-colors text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl group-hover:scale-110 transition-transform">person_add</span>
+          <p class="text-sm font-bold text-dark mt-2">Generate Onboarding Link</p>
+          <p class="text-xs text-mid mt-0.5">Create invite for new tenant</p>
+        </button>
+        <button class="p-4 bg-warm rounded-xl hover:bg-sand transition-colors text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl group-hover:scale-110 transition-transform">receipt_long</span>
+          <p class="text-sm font-bold text-dark mt-2">Generate Monthly Rent</p>
+          <p class="text-xs text-mid mt-0.5">Bulk rent for all tenants</p>
+        </button>
+        <button class="p-4 bg-warm rounded-xl hover:bg-sand transition-colors text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl group-hover:scale-110 transition-transform">electric_bolt</span>
+          <p class="text-sm font-bold text-dark mt-2">Add Electricity Bill</p>
+          <p class="text-xs text-mid mt-0.5">Room-wise billing</p>
+        </button>
+        <button class="p-4 bg-warm rounded-xl hover:bg-sand transition-colors text-left group">
+          <span class="material-symbols-outlined text-amber text-2xl group-hover:scale-110 transition-transform">visibility</span>
+          <p class="text-sm font-bold text-dark mt-2">View as Admin</p>
+          <p class="text-xs text-mid mt-0.5">Impersonate admin view</p>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white border-t border-sand shadow-lg flex justify-around items-center z-50 rounded-t-2xl">
+  <a class="flex flex-col items-center gap-0.5 text-amber" href="#">
+    <span class="material-symbols-outlined">dashboard</span>
+    <span class="text-[10px] font-semibold">Home</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">payments</span>
+    <span class="text-[10px] font-semibold">Finance</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">groups</span>
+    <span class="text-[10px] font-semibold">Tenants</span>
+  </a>
+  <a class="flex flex-col items-center gap-0.5 text-mid" href="#">
+    <span class="material-symbols-outlined">person</span>
+    <span class="text-[10px] font-semibold">Profile</span>
+  </a>
+</nav>
+
+</body>
+</html>

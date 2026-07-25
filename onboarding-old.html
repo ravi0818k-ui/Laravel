@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PG A1 – Tenant Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <!-- pdf.js for reading/decrypting password-protected PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-pg">PG A</span><span class="logo-one">1</span>
+            </div>
+            <h1>Tenant Verification</h1>
+            <p class="subtitle">Document Upload & Registration</p>
+        </header>
+
+        <form id="pgForm" novalidate>
+            <!-- PG Selection -->
+            <div class="form-group">
+                <label for="pgSelect">Select PG <span class="required">*</span></label>
+                <select id="pgSelect" required>
+                    <option value="">-- Select PG --</option>
+                    <option value="PG A1-Shanti Nagar">PG A1-Shanti Nagar</option>
+                    <option value="PG A1-Jharsa Village">PG A1-Jharsa Village</option>
+                    <option value="PG A1-Sector 46">PG A1-Sector 46</option>
+                    <option value="PG A1-Saraswati Vihar">PG A1-Saraswati Vihar</option>
+                    <option value="1BHK-630">1BHK-630</option>
+                </select>
+            </div>
+
+            <!-- Full Name -->
+            <div class="form-group">
+                <label for="fullName">Full Name <span class="required">*</span></label>
+                <input type="text" id="fullName" placeholder="Enter your full name" required>
+            </div>
+
+            <!-- Room No -->
+            <div class="form-group">
+                <label for="roomNo">Room No <span class="required">*</span></label>
+                <input type="text" id="roomNo" placeholder="Enter your room number" required>
+            </div>
+
+            <!-- Mobile Number -->
+            <div class="form-group">
+                <label for="mobile">Mobile Number <span class="required">*</span></label>
+                <input type="tel" id="mobile" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" required>
+            </div>
+
+            <!-- Date of Birth -->
+            <div class="form-group">
+                <label>Date of Birth <span class="required">*</span></label>
+                <div class="dob-wrapper">
+                    <select id="dobYear" required>
+                        <option value="">Year</option>
+                    </select>
+                    <select id="dobMonth" required>
+                        <option value="">Month</option>
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    <select id="dobDay" required>
+                        <option value="">Day</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Corporate/Company/College Name -->
+            <div class="form-group">
+                <label for="companyName">Corporate / Company / College Name <span class="required">*</span></label>
+                <input type="text" id="companyName" placeholder="Enter company/college name" required>
+            </div>
+
+            <!-- Corporate/Company/College Address -->
+            <div class="form-group">
+                <label for="address">Corporate / Company / College Address <span class="required">*</span></label>
+                <textarea id="address" rows="3" placeholder="Enter your corporate/company/college address" required></textarea>
+            </div>
+
+            <!-- Father/Mother Mobile -->
+            <div class="form-group">
+                <label for="parentMobile">Father's/Mother's Mobile Number <span class="required">*</span></label>
+                <input type="tel" id="parentMobile" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" required>
+            </div>
+
+            <!-- Reference Number 1 (Mandatory) -->
+            <div class="form-group">
+                <label for="reference1">Reference Number 1 <span class="required">*</span></label>
+                <input type="tel" id="reference1" placeholder="10-digit reference number" pattern="[0-9]{10}" maxlength="10" required>
+            </div>
+
+            <!-- Reference Number 2 (Optional) -->
+            <div class="form-group">
+                <label for="reference2">Reference Number 2 <span class="optional">(Optional)</span></label>
+                <input type="tel" id="reference2" placeholder="10-digit reference number" pattern="[0-9]{10}" maxlength="10">
+            </div>
+
+            <!-- Blood Group -->
+            <div class="form-group">
+                <label for="bloodGroup">Blood Group <span class="optional">(Optional)</span></label>
+                <select id="bloodGroup">
+                    <option value="">-- Select Blood Group --</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+            </div>
+
+            <!-- Date of Onboarding -->
+            <div class="form-group">
+                <label for="onboarding">Date of Onboarding <span class="required">*</span></label>
+                <input type="date" id="onboarding" required>
+            </div>
+
+            <!-- Corporate/Company/College ID Card Upload -->
+            <div class="form-group">
+                <label>Corporate / Company / College Document / ID Card <span class="required">*</span></label>
+                <div class="upload-section">
+                    <button type="button" id="chooseCompanyDoc" class="btn-upload btn-full">
+                        🏢 Upload Company/College ID Image
+                    </button>
+                    <input type="file" id="companyDocInput" accept="image/*" hidden>
+                    <div id="companyDocPreview" class="preview-container hidden">
+                        <img id="companyDocImg" alt="Company/College ID preview">
+                        <button type="button" class="btn-remove" onclick="removeCompanyDoc()">✕</button>
+                    </div>
+                    <small class="hint">Max file size: 8 MB</small>
+                </div>
+            </div>
+
+            <!-- Selfie Upload -->
+            <div class="form-group">
+                <label>Upload Selfie / Photo <span class="required">*</span></label>
+                <div class="upload-section">
+                    <div class="upload-options">
+                        <button type="button" id="takeSelfie" class="btn-upload">
+                            📷 Take Selfie
+                        </button>
+                        <button type="button" id="chooseSelfie" class="btn-upload">
+                            🖼️ Choose from Gallery
+                        </button>
+                    </div>
+                    <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
+                    <input type="file" id="selfieGallery" accept="image/*" hidden>
+                    <div id="selfiePreview" class="preview-container hidden">
+                        <img id="selfieImg" alt="Selfie preview">
+                        <button type="button" class="btn-remove" onclick="removeSelfie()">✕</button>
+                    </div>
+                    <small class="hint">Max file size: 8 MB</small>
+                </div>
+            </div>
+
+            <!-- Document Upload: Aadhaar / Voter ID -->
+            <div class="form-group">
+                <label>Upload Document (Aadhaar / Voter ID Card) <span class="required">*</span></label>
+                <div class="upload-section">
+                    <select id="docType" class="doc-type-select">
+                        <option value="Aadhaar">Aadhaar Card</option>
+                        <option value="Voter ID">Voter ID Card</option>
+                    </select>
+
+                    <!-- Aadhaar: PDF Upload -->
+                    <div id="aadhaarSection">
+                        <div class="doc-upload-row">
+                            <label class="doc-side-label">Upload Aadhaar PDF <span class="required">*</span></label>
+                            <button type="button" id="chooseAadhaarPdf" class="btn-upload btn-full">
+                                📄 Upload Aadhaar PDF
+                            </button>
+                            <input type="file" id="aadhaarPdfInput" accept="application/pdf" hidden>
+                            <div id="aadhaarPdfPreview" class="preview-container hidden">
+                                <div class="pdf-badge">📎 <span id="aadhaarPdfName"></span></div>
+                                <button type="button" class="btn-remove" onclick="removeAadhaarPdf()">✕</button>
+                            </div>
+                            <small class="hint">PDF only. Max file size: 5 MB</small>
+                        </div>
+                    </div>
+
+                    <!-- Voter ID: Front & Back Image Upload -->
+                    <div id="voterIdSection" class="hidden">
+                        <!-- Front Side -->
+                        <div class="doc-upload-row">
+                            <label class="doc-side-label">Front Side <span class="required">*</span></label>
+                            <button type="button" id="chooseDocFront" class="btn-upload btn-full">
+                                📄 Upload Front Image
+                            </button>
+                            <input type="file" id="docFrontInput" accept="image/*" hidden>
+                            <div id="docFrontPreview" class="preview-container hidden">
+                                <img id="docFrontImg" alt="Document front preview">
+                                <button type="button" class="btn-remove" onclick="removeDocFront()">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Back Side -->
+                        <div class="doc-upload-row">
+                            <label class="doc-side-label">Back Side <span class="required">*</span></label>
+                            <button type="button" id="chooseDocBack" class="btn-upload btn-full">
+                                📄 Upload Back Image
+                            </button>
+                            <input type="file" id="docBackInput" accept="image/*" hidden>
+                            <div id="docBackPreview" class="preview-container hidden">
+                                <img id="docBackImg" alt="Document back preview">
+                                <button type="button" class="btn-remove" onclick="removeDocBack()">✕</button>
+                            </div>
+                        </div>
+                        <small class="hint">Max file size: 8 MB per image</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit" id="submitBtn" class="btn-submit">
+                    Submit Verification
+                </button>
+            </div>
+        </form>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="overlay hidden">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <p id="loadingText">Uploading...</p>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="overlay hidden">
+            <div class="modal-content">
+                <div class="success-icon">✅</div>
+                <h2>Submitted Successfully!</h2>
+                <p>Your verification documents have been uploaded.</p>
+                <button onclick="closeSuccess()" class="btn-primary btn-modal">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="overlay hidden">
+        <div class="modal-content error-modal">
+            <div class="error-icon">❌</div>
+            <h2>Upload Failed</h2>
+            <p id="errorMessage">Something went wrong. Please try again or contact support.</p>
+            <a id="errorWhatsappLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-support">
+                <svg viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg" class="wa-icon-small"><path d="M16.01 2.64C8.66 2.64 2.7 8.6 2.7 15.95c0 2.35.62 4.64 1.78 6.66L2.5 29.36l6.95-1.82a13.27 13.27 0 006.56 1.72c7.35 0 13.31-5.96 13.31-13.31S23.36 2.64 16.01 2.64zm0 24.3a10.94 10.94 0 01-5.58-1.53l-.4-.24-4.13 1.08 1.1-4.02-.26-.41a10.96 10.96 0 01-1.68-5.87c0-6.07 4.94-11.01 11.02-11.01 6.07 0 11.01 4.94 11.01 11.01-.01 6.08-4.95 11.02-11.08 11.02v-.03zm6.04-8.24c-.33-.17-1.96-.97-2.27-1.08-.3-.11-.52-.17-.74.17-.22.33-.86 1.08-1.05 1.3-.19.22-.39.25-.72.08-.33-.17-1.4-.52-2.66-1.64-.98-.88-1.65-1.96-1.84-2.29-.19-.33-.02-.51.15-.68.15-.15.33-.39.5-.58.17-.19.22-.33.33-.55.11-.22.06-.41-.03-.58-.08-.17-.74-1.78-1.01-2.43-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.58.08-.88.41-.3.33-1.16 1.13-1.16 2.76s1.19 3.2 1.35 3.42c.17.22 2.34 3.57 5.67 5 .79.34 1.41.55 1.89.7.79.25 1.52.22 2.09.13.64-.09 1.96-.8 2.24-1.57.28-.78.28-1.44.19-1.58-.08-.14-.3-.22-.63-.39z"/></svg>
+                Contact Support on WhatsApp
+            </a>
+            <button onclick="closeErrorModal()" class="btn-primary btn-modal" style="margin-top: 10px;">Close</button>
+        </div>
+    </div>
+
+    <!-- WhatsApp Floating Button (hidden until error) -->
+    <a id="waFloatBtn" href="https://wa.me/919310226604" target="_blank" class="wa-float hidden" aria-label="Chat on WhatsApp">
+        <svg viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16.01 2.64C8.66 2.64 2.7 8.6 2.7 15.95c0 2.35.62 4.64 1.78 6.66L2.5 29.36l6.95-1.82a13.27 13.27 0 006.56 1.72c7.35 0 13.31-5.96 13.31-13.31S23.36 2.64 16.01 2.64zm0 24.3a10.94 10.94 0 01-5.58-1.53l-.4-.24-4.13 1.08 1.1-4.02-.26-.41a10.96 10.96 0 01-1.68-5.87c0-6.07 4.94-11.01 11.02-11.01 6.07 0 11.01 4.94 11.01 11.01-.01 6.08-4.95 11.02-11.08 11.02v-.03zm6.04-8.24c-.33-.17-1.96-.97-2.27-1.08-.3-.11-.52-.17-.74.17-.22.33-.86 1.08-1.05 1.3-.19.22-.39.25-.72.08-.33-.17-1.4-.52-2.66-1.64-.98-.88-1.65-1.96-1.84-2.29-.19-.33-.02-.51.15-.68.15-.15.33-.39.5-.58.17-.19.22-.33.33-.55.11-.22.06-.41-.03-.58-.08-.17-.74-1.78-1.01-2.43-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.58.08-.88.41-.3.33-1.16 1.13-1.16 2.76s1.19 3.2 1.35 3.42c.17.22 2.34 3.57 5.67 5 .79.34 1.41.55 1.89.7.79.25 1.52.22 2.09.13.64-.09 1.96-.8 2.24-1.57.28-.78.28-1.44.19-1.58-.08-.14-.3-.22-.63-.39z"/></svg>
+    </a>
+
+    <!-- PDF Password Modal -->
+    <div id="pdfPasswordModal" class="overlay hidden">
+        <div class="modal-content">
+            <h3>🔒 PDF is Password Protected</h3>
+            <p class="password-hint">
+                <strong>Password Format:</strong><br>
+                First 4 letters of your name in CAPITAL letters + Year of Birth (YYYY)
+            </p>
+            <p class="password-example">
+                <strong>Example:</strong><br>
+                Name: SURESH KUMAR<br>
+                Year of Birth: 1990<br>
+                Password: <strong>SURE1990</strong>
+            </p>
+            <input type="text" id="pdfPassword" placeholder="Enter PDF password">
+            <div class="modal-buttons">
+                <button onclick="unlockAndUploadPdf()" class="btn-primary btn-modal">Unlock & Continue</button>
+                <button onclick="closePdfPasswordModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aadhaar Info Modal -->
+    <div id="aadhaarInfoModal" class="overlay hidden">
+        <div class="modal-content">
+            <h3>📄 Aadhaar Upload Instructions</h3>
+            <p>Please download your Aadhaar Card (e-Aadhaar) from the official UIDAI website and upload it in PDF format only.</p>
+            <p class="hindi-text">कृपया UIDAI की आधिकारिक वेबसाइट से अपना ई-आधार (e-Aadhaar) डाउनलोड करें और केवल PDF प्रारूप में अपलोड करें।</p>
+            <a href="https://myaadhaar.uidai.gov.in/genricDownloadAadhaar/en" target="_blank" rel="noopener noreferrer" class="btn-link">🔗 Download from UIDAI</a>
+            <div class="modal-buttons">
+                <button onclick="proceedAadhaarUpload()" class="btn-primary btn-modal">Upload PDF</button>
+                <button onclick="closeAadhaarInfoModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG A1 | Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600;700&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { cream:'#faf6f0', warm:'#f2ebe0', sand:'#e8d8c4', amber:'#c8813a', 'amber-hover':'#e09a50', dark:'#1a1410', charcoal:'#3d3028', mid:'#7a6655', light:'#b8a898', success:'#2d6a4f', 'success-bg':'#d8f3dc', danger:'#c1121f', 'danger-bg':'#fde8e8', info:'#1d4ed8', 'info-bg':'#dbeafe' },
+        fontFamily: { display:['Playfair Display','serif'], body:['DM Sans','sans-serif'], brand:['Roboto','sans-serif'] },
+        boxShadow: { card:'0 4px 32px rgba(26,20,16,0.10)', 'card-hover':'0 12px 48px rgba(26,20,16,0.18)' }
+      }}
+    }
+  </script>
+  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}</style>
+</head>
+<body class="bg-cream text-charcoal">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
+  <div class="p-6">
+    <div class="flex items-end gap-0">
+      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+    </div>
+    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Admin Panel</p>
+  </div>
+  <nav class="flex-1 mt-2">
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-section="dashboard">
+      <span class="material-symbols-outlined text-amber">dashboard</span><span class="text-sm font-medium">Dashboard</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="tenants">
+      <span class="material-symbols-outlined">groups</span><span class="text-sm font-medium">Tenants</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="rooms">
+      <span class="material-symbols-outlined">bed</span><span class="text-sm font-medium">Rooms & Beds</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="payments">
+      <span class="material-symbols-outlined">payments</span><span class="text-sm font-medium">Payments</span>
+      <span id="payment-badge" class="ml-auto text-[10px] bg-danger text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="onboarding">
+      <span class="material-symbols-outlined">person_add</span><span class="text-sm font-medium">Onboarding</span>
+      <span id="onboarding-badge" class="ml-auto text-[10px] bg-amber text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="notes">
+      <span class="material-symbols-outlined">sticky_note_2</span><span class="text-sm font-medium">Notes</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="expenses">
+      <span class="material-symbols-outlined">account_balance_wallet</span><span class="text-sm font-medium">Expenses</span>
+    </a>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="electricity">
+      <span class="material-symbols-outlined">electric_bolt</span><span class="text-sm font-medium">Electricity</span>
+    </a>
+  </nav>
+  <div class="p-4 border-t border-charcoal">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm" id="sidebar-avatar">A</div>
+      <div>
+        <p class="text-sm font-bold text-white" id="sidebar-name">Admin</p>
+        <button onclick="api.logout()" class="text-[10px] tracking-wider uppercase text-light hover:text-amber">Logout</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Header -->
+<header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
+  <div class="flex items-center gap-3">
+    <button class="md:hidden p-2" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+      <span class="material-symbols-outlined text-dark">menu</span>
+    </button>
+    <select id="pg-selector" class="text-sm border border-sand bg-warm rounded-lg px-3 py-2 text-charcoal font-medium focus:ring-amber focus:border-amber min-w-[200px]" onchange="switchPg()"></select>
+  </div>
+  <button onclick="api.logout()" class="md:hidden text-xs text-mid font-bold">Logout</button>
+</header>
+
+<!-- Main -->
+<main class="md:ml-60 min-h-screen px-4 pb-20 md:px-6 md:pb-6" style="padding-top:5rem;" id="main"></main>
+
+<!-- Mobile Nav -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-white border-t border-sand shadow-lg flex justify-around items-center z-50 rounded-t-2xl">
+  <a onclick="showSection('dashboard')" class="flex flex-col items-center gap-0.5 text-amber"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px] font-semibold">Home</span></a>
+  <a onclick="showSection('tenants')" class="flex flex-col items-center gap-0.5 text-mid"><span class="material-symbols-outlined">groups</span><span class="text-[10px] font-semibold">Tenants</span></a>
+  <a onclick="showSection('payments')" class="flex flex-col items-center gap-0.5 text-mid"><span class="material-symbols-outlined">payments</span><span class="text-[10px] font-semibold">Payments</span></a>
+  <a onclick="showSection('rooms')" class="flex flex-col items-center gap-0.5 text-mid"><span class="material-symbols-outlined">bed</span><span class="text-[10px] font-semibold">Rooms</span></a>
+</nav>
+
+<script src="js/api.js?v=2"></script>
+<script src="js/modal.js?v=2"></script>
+<script>
+if (!requireAuth(['admin','super_admin'])) throw new Error('Unauthorized');
+
+// Date formatting helper
+function fmtDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const user = api.getUser();
+document.getElementById('sidebar-name').textContent = user.name;
+document.getElementById('sidebar-avatar').textContent = user.name.substring(0,2).toUpperCase();
+
+let pgLocations = [];
+let currentPgId = null;
+
+// Nav links
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    // Update active state
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.classList.remove('border-amber', 'text-white', 'bg-charcoal');
+      l.classList.add('border-transparent', 'text-light');
+    });
+    link.classList.add('border-amber', 'text-white', 'bg-charcoal');
+    link.classList.remove('border-transparent', 'text-light');
+    showSection(link.dataset.section);
+  });
+});
+
+async function init() {
+  try {
+    console.log('Admin init: fetching PG locations...');
+    const data = await api.adminPgLocations();
+    console.log('Admin init: got data', data);
+    pgLocations = data.pg_locations || [];
+    const sel = document.getElementById('pg-selector');
+    if (pgLocations.length === 0) {
+      sel.innerHTML = '<option value="">All PG Locations</option>';
+      currentPgId = null;
+    } else {
+      sel.innerHTML = '<option value="">All PGs</option>' + pgLocations.map(pg => `<option value="${pg.id}">${pg.name.replace(/\u2013/g, '-')}</option>`).join('');
+      currentPgId = pgLocations[0].id;
+      sel.value = currentPgId;
+    }
+    showSection('dashboard');
+  } catch (err) {
+    console.error('Admin init error:', err);
+    document.getElementById('main').innerHTML = `<div class="text-center py-8"><p class="text-danger font-medium">Failed to load dashboard.</p><p class="text-xs text-mid mt-1">${err?.data?.message || err?.message || 'Unknown error'}</p><button onclick="init()" class="mt-3 text-amber font-bold text-sm hover:underline">Retry</button></div>`;
+  }
+}
+
+function switchPg() {
+  const val = document.getElementById('pg-selector').value;
+  currentPgId = val ? parseInt(val) : null;
+  showSection('dashboard');
+}
+
+async function showSection(section) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="flex justify-center py-12"><span class="material-symbols-outlined text-3xl text-amber animate-spin">progress_activity</span></div>';
+
+  try {
+    switch (section) {
+      case 'dashboard': await renderAdminDashboard(); break;
+      case 'tenants': await renderTenants(); break;
+      case 'rooms': await renderRooms(); break;
+      case 'payments': await renderPayments(); break;
+      case 'onboarding': await renderOnboarding(); break;
+      case 'notes': await renderNotes(); break;
+      case 'expenses': await renderExpenses(); break;
+      case 'electricity': await renderElectricity(); break;
+      default: main.innerHTML = '<p class="text-mid text-center py-8">Section not found.</p>';
+    }
+  } catch(err) {
+    console.error('Section error:', err);
+    main.innerHTML = `<div class="text-center py-8"><p class="text-danger font-medium">Something went wrong.</p><p class="text-xs text-mid mt-1">${err.data?.message || err.message || 'Unknown error'}</p><button onclick="showSection('${section}')" class="mt-3 text-amber font-bold text-sm hover:underline">Retry</button></div>`;
+  }
+}
+
+async function renderAdminDashboard() {
+  const [tenantsData, paymentsData, roomsData] = await Promise.all([
+    api.adminTenants(currentPgId ? `pg_location_id=${currentPgId}` : ''),
+    api.adminPayments(),
+    api.adminRooms(currentPgId || '')
+  ]);
+
+  const tenants = tenantsData.tenants || [];
+  const payments = paymentsData.payments || [];
+  const rooms = roomsData.rooms || [];
+  const pendingCount = payments.length;
+  const badge = document.getElementById('payment-badge');
+  if (pendingCount > 0) { badge.textContent = pendingCount; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+
+  // Fetch onboarding count (submitted applications awaiting approval)
+  try {
+    const onbData = await api.listApplications('submitted');
+    const submittedCount = (onbData.applications || []).length;
+    const onbBadge = document.getElementById('onboarding-badge');
+    if (submittedCount > 0) { onbBadge.textContent = submittedCount; onbBadge.classList.remove('hidden'); } else { onbBadge.classList.add('hidden'); }
+  } catch(e) {}
+
+  const currentPg = pgLocations.find(p => p.id === currentPgId);
+  const totalBeds = rooms.reduce((sum, r) => sum + (r.beds?.length || 0), 0);
+  const occupiedBeds = rooms.reduce((sum, r) => sum + (r.beds?.filter(b => b.status === 'occupied').length || 0), 0);
+
+  document.getElementById('main').innerHTML = `
+    <div class="mb-6">
+      <h2 class="font-display text-2xl font-black text-dark">${currentPg?.name || 'Admin Dashboard'}</h2>
+      <p class="text-sm text-mid mt-1">${tenants.length} tenants • ${totalBeds} beds • ${pendingCount} pending payments</p>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Active Tenants</p>
+        <h3 class="font-display text-2xl font-black text-dark mt-1">${tenants.filter(t=>t.status==='active').length}</h3>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Total Beds</p>
+        <h3 class="font-display text-2xl font-black text-dark mt-1">${totalBeds}</h3>
+        <p class="text-xs text-success mt-1">${totalBeds - occupiedBeds} available</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Pending Payments</p>
+        <h3 class="font-display text-2xl font-black ${pendingCount > 0 ? 'text-danger' : 'text-dark'} mt-1">${pendingCount}</h3>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Rooms</p>
+        <h3 class="font-display text-2xl font-black text-dark mt-1">${rooms.length}</h3>
+      </div>
+    </div>
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <button onclick="generateOnboarding()" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left">
+        <span class="material-symbols-outlined text-amber text-2xl">link</span>
+        <p class="text-xs font-bold text-dark mt-2">Onboarding Link</p>
+      </button>
+      <button onclick="showSection('rooms')" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left">
+        <span class="material-symbols-outlined text-amber text-2xl">add</span>
+        <p class="text-xs font-bold text-dark mt-2">Add Room/Bed</p>
+      </button>
+      <button onclick="showSection('payments')" class="p-4 bg-white rounded-2xl border border-sand shadow-card hover:shadow-card-hover transition-all text-left">
+        <span class="material-symbols-outlined text-amber text-2xl">verified</span>
+        <p class="text-xs font-bold text-dark mt-2">Verify Payments</p>
+      </button>
+    </div>`;
+}
+
+async function renderTenants() {
+  const data = await api.adminTenants(currentPgId ? `pg_location_id=${currentPgId}` : '');
+  const tenants = data.tenants || [];
+
+  document.getElementById('main').innerHTML = `
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 sticky top-16 bg-cream z-10 py-3 -mx-4 px-4 md:-mx-6 md:px-6">
+      <h2 class="font-display text-2xl font-black text-dark">Tenants</h2>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="showTrash()" class="border border-danger text-danger px-3 py-2 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">delete</span>Trash
+        </button>
+        <button onclick="showGenerateRentModal()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">receipt_long</span>Generate Rent
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <input type="text" id="filter-name" placeholder="Search by name..." oninput="filterTenants()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal placeholder-light focus:ring-2 focus:ring-amber focus:border-amber outline-none w-48" />
+      <select id="filter-room" onchange="filterTenants()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber focus:border-amber outline-none">
+        <option value="">All Rooms</option>
+        ${[...new Set(tenants.map(t => t.current_bed_allocation?.bed?.room?.room_number).filter(Boolean))].sort().map(r => `<option value="${r}">Room ${r}</option>`).join('')}
+      </select>
+      <select id="filter-payment" onchange="filterTenants()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber focus:border-amber outline-none">
+        <option value="">All Payment Status</option>
+        <option value="paid">Paid</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="in_progress">In Progress</option>
+      </select>
+      <select id="filter-status" onchange="filterTenants()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber focus:border-amber outline-none">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="offboarded">Offboarded</option>
+      </select>
+    </div>
+
+    ${tenants.length === 0 ? '<p class="text-mid text-center py-8">No tenants yet.</p>' : `
+    <div class="bg-white rounded-2xl border border-sand shadow-card">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[700px]">
+          <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
+            <th class="p-3">Tenant</th><th class="p-3">Room</th><th class="p-3">Rent</th><th class="p-3">Rent Paid</th><th class="p-3">Elec Paid</th><th class="p-3">Status</th><th class="p-3">Actions</th>
+          </tr></thead>
+          <tbody id="tenants-tbody">${tenants.map(t => renderTenantRow(t)).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`}
+  `;
+
+  // Store tenants data for filtering
+  window._tenantsData = tenants;
+}
+
+function getPaymentStatus(t) {
+  const rent = t.latest_rent;
+  if (!rent) return { label: '—', class: 'text-mid bg-warm' };
+  if (rent.status === 'paid') return { label: 'Paid', class: 'text-success bg-success-bg' };
+  const hasPending = (rent.payment_submissions || []).some(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
+  if (hasPending) return { label: 'In Progress', class: 'text-amber bg-warm' };
+  return { label: 'Unpaid', class: 'text-danger bg-danger-bg' };
+}
+
+function renderTenantRow(t) {
+  const payStatus = getPaymentStatus(t);
+  const name = t.user?.name || '—';
+  const safeName = name.replace(/'/g, "\\'");
+
+  // Electricity status
+  const elecAllocs = t.electricity_bill_allocations || [];
+  const unpaidElec = elecAllocs.filter(a => a.status === 'unpaid');
+  const elecStatus = elecAllocs.length === 0 ? { label: '—', class: 'text-mid bg-warm' }
+    : unpaidElec.length === 0 ? { label: 'Paid', class: 'text-success bg-success-bg' }
+    : { label: 'Unpaid', class: 'text-danger bg-danger-bg' };
+
+  return `
+    <tr class="border-b border-sand/50 hover:bg-warm/30 transition-colors tenant-row" data-name="${name.toLowerCase()}" data-status="${t.status}" data-payment="${payStatus.label.toLowerCase().replace(' ','_')}" data-room="${t.current_bed_allocation?.bed?.room?.room_number || ''}">
+      <td class="p-3">
+        <p class="font-bold text-dark">${name}</p>
+        <p class="text-[10px] text-amber font-mono">${t.tenant_id}</p>
+        <a href="tel:${t.user?.mobile || ''}" class="text-[10px] text-mid hover:text-amber">📞 ${t.user?.mobile || ''}</a>
+      </td>
+      <td class="p-3 text-mid text-xs">${t.current_bed_allocation?.bed?.room?.room_number ? 'R' + t.current_bed_allocation.bed.room.room_number + '/B' + t.current_bed_allocation.bed.bed_number : '—'}</td>
+      <td class="p-3 font-bold text-dark">₹${parseInt(t.current_rent).toLocaleString('en-IN')}</td>
+      <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${payStatus.class}">${payStatus.label}</span></td>
+      <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${elecStatus.class}">${elecStatus.label}</span></td>
+      <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status==='active' ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'}">${t.status}</span></td>
+      <td class="p-3">
+        <div class="flex gap-1.5 items-center">
+          <button onclick="viewTenantDetail(${t.id})" class="text-[10px] font-bold bg-warm text-charcoal px-2 py-1 rounded hover:bg-sand" title="View Details">👁</button>
+          <button onclick="showChangeRentModal(${t.id}, '${safeName}', ${t.current_rent})" class="text-[10px] font-bold text-amber hover:underline" title="Change Rent">₹</button>
+          <button onclick="showElecAdjustModal(${t.id}, '${safeName}', '${t.tenant_id}')" class="text-[10px] font-bold text-amber hover:underline" title="Electricity">⚡</button>
+          <button onclick="showChangeRoomModal(${t.id}, '${safeName}')" class="text-[10px] font-bold text-amber hover:underline" title="Change Room">🏠</button>
+          <button onclick="softDeleteTenant(${t.id}, '${safeName}')" class="text-[10px] font-bold text-danger hover:underline" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function filterTenants() {
+  const nameFilter = (document.getElementById('filter-name').value || '').toLowerCase();
+  const roomFilter = document.getElementById('filter-room').value;
+  const payFilter = document.getElementById('filter-payment').value;
+  const statusFilter = document.getElementById('filter-status').value;
+
+  document.querySelectorAll('.tenant-row').forEach(row => {
+    const name = row.dataset.name;
+    const room = row.dataset.room;
+    const payment = row.dataset.payment;
+    const status = row.dataset.status;
+
+    let show = true;
+    if (nameFilter && !name.includes(nameFilter)) show = false;
+    if (roomFilter && room !== roomFilter) show = false;
+    if (payFilter && payment !== payFilter) show = false;
+    if (statusFilter && status !== statusFilter) show = false;
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+async function viewTenantDetail(tenantId) {
+  try {
+    const data = await api.adminTenantDetail(tenantId);
+    const t = data.tenant;
+    const docs = t.documents || [];
+    const bed = t.current_bed_allocation?.bed;
+    const room = bed?.room;
+    const rents = t.monthly_rents || [];
+    const latestRent = rents[0];
+
+    // Get verified payment submissions for screenshot viewing
+    let paymentScreenshots = [];
+    if (latestRent && latestRent.payment_submissions) {
+      paymentScreenshots = latestRent.payment_submissions.filter(ps => ps.status === 'verified');
+    }
+
+    openModal(`
+      <div class="p-5 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-start mb-3">
+          <h3 class="font-display text-lg font-bold text-[#1a1410]">${t.user?.name || '—'}</h3>
+          <div class="flex gap-2">
+            <button onclick="impersonateTenant(${t.id})" class="text-[10px] font-bold bg-[#1d4ed8] text-white px-2.5 py-1.5 rounded-lg hover:opacity-90" title="View as Tenant">👤 Impersonate</button>
+            <button onclick="showResetPasswordModal(${t.id}, '${(t.user?.name || '').replace(/'/g, "\\'")}')" class="text-[10px] font-bold bg-[#7a6655] text-white px-2.5 py-1.5 rounded-lg hover:opacity-90" title="Reset Password">🔑 Reset Pwd</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
+          <div><span class="text-[10px] text-[#7a6655] block">Tenant ID</span><span class="font-mono text-[#c8813a] font-bold">${t.tenant_id}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Mobile</span><span class="font-bold">${t.user?.mobile || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">DOB</span><span>${fmtDate(t.date_of_birth)}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Blood Group</span><span>${t.blood_group || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Company/College</span><span>${t.company_or_college || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Company Address</span><span>${t.company_college_address || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Parent Mobile</span><span>${t.parent_mobile || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Reference 1</span><span>${t.reference_mobile_1 || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Reference 2</span><span>${t.reference_mobile_2 || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">PG Location</span><span>${t.pg_location?.name || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Room/Bed</span><span>${room ? 'Room ' + room.room_number + ', Bed ' + bed.bed_number : '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Rent</span><span class="font-bold">₹${parseInt(t.current_rent).toLocaleString('en-IN')}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Joining Date</span><span>${fmtDate(t.joining_date)}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Security Deposit</span><span>₹${parseInt(t.security_deposit || 0).toLocaleString('en-IN')}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Referral Code</span><span class="font-mono text-[#c8813a]">${t.referral_code || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Referred By</span><span>${t.referred_by_code || '—'}</span></div>
+          <div><span class="text-[10px] text-[#7a6655] block">Status</span><span class="font-bold ${t.status === 'active' ? 'text-[#2d6a4f]' : 'text-[#c1121f]'}">${t.status}</span></div>
+        </div>
+
+        <!-- First Payment & Security Deposit Status -->
+        ${(() => {
+          const allPayments = t.payment_submissions || [];
+          const firstPayments = allPayments.filter(p => !p.monthly_rent_id);
+          const rentAmt = parseInt(t.current_rent || 0);
+          const secAmt = parseInt(t.security_deposit || 0);
+          const rentPay = firstPayments.find(p => p.transaction_reference === 'first_rent' || p.transaction_reference === 'first_both');
+          const secPay = firstPayments.find(p => p.transaction_reference === 'first_security' || p.transaction_reference === 'first_both');
+          const anyPay = firstPayments.length > 0 && !rentPay && !secPay ? firstPayments[0] : null;
+          const rp = rentPay || anyPay;
+          const sp = secPay || anyPay;
+          function statusBadge(payment) {
+            if (!payment) return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Unpaid</span>';
+            if (payment.status === 'verified') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#2d6a4f] bg-[#d8f3dc]">Paid ✓</span>';
+            if (payment.status === 'rejected') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Rejected</span>';
+            return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Pending</span>';
+          }
+          return `<div class="border-t border-[#e8d8c4] pt-3 mt-3"><p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">First Payment & Security</p><div class="space-y-2"><div class="flex items-center justify-between p-2.5 rounded-lg ${rp?.status === 'verified' ? 'bg-[#d8f3dc]' : !rp ? 'bg-[#fde8e8]' : 'bg-[#f2ebe0]'}"><div><p class="text-xs font-bold text-[#1a1410]">First Month Rent</p><p class="text-[10px] text-[#7a6655]">₹${rentAmt.toLocaleString('en-IN')}${rp ? ' via ' + rp.payment_method : ''}</p></div>${statusBadge(rp)}</div>${secAmt > 0 ? `<div class="flex items-center justify-between p-2.5 rounded-lg ${sp?.status === 'verified' ? 'bg-[#d8f3dc]' : !sp ? 'bg-[#fde8e8]' : 'bg-[#f2ebe0]'}"><div><p class="text-xs font-bold text-[#1a1410]">Security Deposit</p><p class="text-[10px] text-[#7a6655]">₹${secAmt.toLocaleString('en-IN')}${sp ? ' via ' + sp.payment_method : ''}</p></div>${statusBadge(sp)}</div>` : ''}</div></div>`;
+        })()}
+
+        ${paymentScreenshots.length > 0 ? `
+        <div class="border-t border-[#e8d8c4] pt-3 mt-3">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Payment Receipts (${latestRent.status})</p>
+          <div class="space-y-2">
+            ${paymentScreenshots.map(ps => `
+              <div class="flex items-center justify-between bg-[#d8f3dc] rounded-lg px-3 py-2">
+                <div>
+                  <p class="text-xs font-bold text-[#2d6a4f]">₹${parseInt(ps.verified_amount).toLocaleString('en-IN')} via ${ps.payment_method}</p>
+                  <p class="text-[10px] text-[#7a6655]">${fmtDate(ps.payment_date)}</p>
+                </div>
+                <button onclick="closeModal();viewPaymentScreenshot(${ps.id}, '${(t.user?.name || '').replace(/'/g, "\\'")}', '${latestRent.billing_month ? new Date(latestRent.billing_month).toLocaleString("en-IN",{month:"short",year:"numeric"}) : ""}')" class="text-[10px] font-bold bg-white text-[#2d6a4f] px-2 py-1 rounded border border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white">📷 View</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : latestRent ? `
+        <div class="border-t border-[#e8d8c4] pt-3 mt-3">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-1">Latest Rent</p>
+          <p class="text-xs text-[#3d3028]">${new Date(latestRent.billing_month).toLocaleString('en-IN',{month:'long',year:'numeric'})} — <span class="font-bold ${latestRent.status==='paid' ? 'text-[#2d6a4f]' : 'text-[#c1121f]'}">${latestRent.status}</span></p>
+        </div>` : ''}
+
+        ${docs.length > 0 ? `
+        <div class="border-t border-[#e8d8c4] pt-3 mt-3">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Documents</p>
+          <div class="flex flex-wrap gap-2">
+            ${docs.map(d => `
+              <button onclick="previewDocument(${d.id}, '${d.document_type}', '${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#f2ebe0] rounded-lg text-xs font-semibold text-[#3d3028] hover:bg-[#e8d8c4] border border-[#e8d8c4]">
+                <span class="text-[#c8813a]">${d.mime_type?.includes('pdf') ? '📎' : '🖼️'}</span>
+                ${d.document_type.replace(/_/g, ' ')}
+                <span class="text-[9px] ${d.verification_status === 'verified' ? 'text-[#2d6a4f]' : 'text-[#c8813a]'}">(${d.verification_status})</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>` : ''}
+
+        <div class="mt-4">
+          <button onclick="closeModal()" class="w-full py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Close</button>
+        </div>
+      </div>
+    `);
+  } catch(err) {
+    showToast('Failed to load tenant details', 'error');
+  }
+}
+
+function showResetPasswordModal(tenantId, tenantName) {
+  closeModal();
+  setTimeout(() => {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Reset Password</h3>
+        <p class="text-sm text-[#7a6655] mb-4">Set a new password for <strong>${tenantName}</strong></p>
+        ${buildFormField('reset-pwd', 'New Password', 'text', 'Min 6 characters')}
+        <p class="text-[10px] text-[#7a6655] mt-1">The tenant will need to use this new password to login.</p>
+        <div class="flex gap-3 mt-5">
+          <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+          <button onclick="submitResetPassword(${tenantId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c1121f] hover:opacity-90">Reset Password</button>
+        </div>
+      </div>
+    `);
+  }, 200);
+}
+
+async function submitResetPassword(tenantId) {
+  const pwd = document.getElementById('reset-pwd').value.trim();
+  if (!pwd || pwd.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+  closeModal();
+  try {
+    const result = await api.resetTenantPassword(tenantId, pwd);
+    showToast(result.message);
+  } catch(err) { showToast(err.data?.message || 'Failed to reset password', 'error'); }
+}
+
+async function impersonateTenant(tenantId) {
+  try {
+    const result = await api.impersonateTenant(tenantId);
+    
+    // Store impersonation token in a separate key that tenant.html will check
+    localStorage.setItem('pga1_impersonate_token', result.token);
+    localStorage.setItem('pga1_impersonate_user', JSON.stringify(result.user));
+
+    // Open tenant dashboard in new tab (it will detect impersonation mode)
+    window.open('tenant.html?impersonate=1', '_blank');
+
+    closeModal();
+    showToast(`Opened ${result.user.name}'s dashboard in new tab`);
+  } catch(err) { showToast(err.data?.message || 'Failed to impersonate', 'error'); }
+}
+
+async function renderRooms() {
+  try {
+    const data = await api.adminRooms(currentPgId || '');
+    const rooms = data.rooms || [];
+    document.getElementById('main').innerHTML = `
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-display text-2xl font-black text-dark">Rooms & Beds</h2>
+        <button onclick="addRoom()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover transition-all flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">add</span>Add Room
+        </button>
+      </div>
+      ${rooms.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid mb-4">No rooms yet. Click "Add Room" above to create your first room, then add beds to it.</p><button onclick="addRoom()" class="bg-amber text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-amber-hover">+ Add Your First Room</button></div>' : `
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${rooms.map(r => `
+          <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+            <div class="flex justify-between items-start">
+              <div>
+                <h5 class="font-bold text-dark">Room ${r.room_number}</h5>
+                <p class="text-xs text-mid">Floor ${r.floor} • ${r.room_type} • ${r.pg_location?.name || ''}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="addBed(${r.id})" class="text-[10px] font-bold text-amber hover:underline">+ Bed</button>
+                <button onclick="deleteRoom(${r.id}, '${r.room_number}', ${(r.beds||[]).filter(b=>b.status==='occupied').length})" class="text-[10px] font-bold text-danger hover:underline" title="Delete room">🗑</button>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3 flex-wrap">
+              ${(r.beds || []).map(b => `
+                <div class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${b.status==='available' ? 'bg-success-bg text-success' : b.status==='occupied' ? 'bg-warm text-charcoal' : 'bg-danger-bg text-danger'}">
+                  <span class="w-2 h-2 rounded-full ${b.status==='available' ? 'bg-success' : b.status==='occupied' ? 'bg-charcoal' : 'bg-danger'}"></span>
+                  Bed ${b.bed_number} • ₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}
+                  ${b.status !== 'occupied' ? `<button onclick="event.stopPropagation();deleteBed(${b.id},'${b.bed_number}')" class="ml-1 text-danger hover:text-white hover:bg-danger rounded px-1" title="Delete bed">×</button>` : ''}
+                </div>
+              `).join('')}
+              ${(r.beds || []).length === 0 ? '<span class="text-xs text-light">No beds added yet</span>' : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="flex items-center gap-4 mt-4 text-xs text-mid">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-success inline-block"></span> Available</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-charcoal inline-block"></span> Occupied</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-danger inline-block"></span> Maintenance</span>
+      </div>`}
+    `;
+  } catch(err) {
+    document.getElementById('main').innerHTML = `<p class="text-danger text-center py-8">Failed to load rooms: ${err.data?.message || 'Error'}</p>`;
+  }
+}
+
+async function renderPayments() {
+  const data = await api.adminPayments();
+  const payments = data.payments || [];
+  document.getElementById('main').innerHTML = `
+    <h2 class="font-display text-2xl font-black text-dark mb-4">Payment Verifications</h2>
+    ${payments.length === 0 ? '<p class="text-success text-center py-8 font-medium">✓ No pending payments to verify.</p>' : `
+    <div class="space-y-4">
+      ${payments.map(p => {
+        const billingMonth = p.monthly_rent?.billing_month ? new Date(p.monthly_rent.billing_month).toLocaleString('en-IN', {month:'long', year:'numeric'}) : '';
+        return `
+        <div class="bg-white rounded-2xl border border-sand shadow-card overflow-hidden">
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <p class="text-sm font-bold text-dark">${p.tenant?.user?.name || 'Tenant'} <span class="font-mono text-amber text-xs">${p.tenant?.tenant_id || ''}</span></p>
+                <p class="text-xs text-mid mt-0.5">${billingMonth ? billingMonth + ' • ' : ''}₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p>
+                <p class="text-[10px] text-light mt-0.5">Submitted: ${fmtDate(p.payment_date || p.created_at)}</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warm text-amber">Pending</span>
+            </div>
+            <!-- Screenshot Preview -->
+            <div class="mb-3 border border-sand rounded-xl overflow-hidden cursor-pointer" id="screenshot-container-${p.id}" onclick="viewPaymentScreenshot(${p.id}, '${(p.tenant?.user?.name || 'Tenant').replace(/'/g, "\\'")}', '${billingMonth}')">
+              <div class="p-4 text-center bg-warm">
+                <span class="material-symbols-outlined text-amber text-2xl">image</span>
+                <p class="text-[10px] text-mid mt-1">Loading screenshot...</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="verifyPayment(${p.id}, ${p.claimed_amount})" class="flex-1 bg-success text-white py-2.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">check</span>Verify ₹${parseInt(p.claimed_amount).toLocaleString('en-IN')}
+              </button>
+              <button onclick="rejectPayment(${p.id})" class="px-4 py-2.5 border border-danger text-danger rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`}`;
+
+  // Load screenshots with auth headers
+  payments.forEach(p => loadPaymentScreenshot(p.id));
+}
+
+async function loadPaymentScreenshot(paymentId) {
+  const container = document.getElementById(`screenshot-container-${paymentId}`);
+  if (!container) return;
+  try {
+    const resp = await fetch(`${API_BASE}/admin/payments/${paymentId}/screenshot`, {
+      headers: { 'Authorization': `Bearer ${api.getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Not found');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    container.innerHTML = `
+      <img src="${url}" alt="Payment screenshot" class="w-full max-h-48 object-cover" />
+      <p class="text-[10px] text-center text-mid py-1 bg-warm">Tap to view full screenshot</p>
+    `;
+    container.dataset.blobUrl = url;
+  } catch(e) {
+    container.innerHTML = '<p class="p-3 text-xs text-mid text-center">Screenshot not available</p>';
+  }
+}
+
+async function viewPaymentScreenshot(paymentId, tenantName, month) {
+  const container = document.getElementById(`screenshot-container-${paymentId}`);
+  let imgUrl = container?.dataset?.blobUrl;
+  if (!imgUrl) {
+    try {
+      const resp = await fetch(`${API_BASE}/admin/payments/${paymentId}/screenshot`, {
+        headers: { 'Authorization': `Bearer ${api.getToken()}` }
+      });
+      if (!resp.ok) { alert('Screenshot not available'); return; }
+      const blob = await resp.blob();
+      imgUrl = URL.createObjectURL(blob);
+    } catch(e) { alert('Failed to load screenshot'); return; }
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="relative max-w-lg w-full">
+      <button onclick="this.closest('.fixed').remove()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-amber">&times;</button>
+      <p class="text-white text-sm mb-2 text-center font-bold">${tenantName} — ${month}</p>
+      <img src="${imgUrl}" alt="Payment screenshot" class="w-full rounded-xl shadow-2xl" style="max-height:80vh;object-fit:contain;" />
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function renderOnboarding() {
+  const data = await api.listApplications();
+  const allApps = data.applications || [];
+  
+  // Separate actual submissions from pending links
+  const apps = allApps.filter(a => a.candidate_name);
+  const pendingLinks = allApps.filter(a => !a.candidate_name && a.status === 'pending');
+
+  document.getElementById('main').innerHTML = `
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="font-display text-2xl font-black text-dark">Onboarding</h2>
+      <button onclick="generateOnboarding()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">link</span>New Link
+      </button>
+    </div>
+    ${apps.length === 0 && pendingLinks.length === 0 ? '<p class="text-mid text-center py-8">No applications yet. Generate a link and share with the candidate.</p>' : `
+    <div class="space-y-3">
+      ${apps.map(a => `
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="text-sm font-bold text-dark">${a.candidate_name}</p>
+              <p class="text-xs text-mid">${a.candidate_mobile || ''}</p>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status==='submitted' ? 'text-amber bg-warm' : a.status==='approved' ? 'text-success bg-success-bg' : a.status==='rejected' ? 'text-danger bg-danger-bg' : 'text-mid bg-warm'}">${a.status}</span>
+          </div>
+          ${a.status === 'submitted' ? `
+          <div class="border-t border-sand pt-3 mt-2">
+            <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+              <div><span class="text-light">DOB:</span> <span class="text-dark font-medium">${fmtDate(a.candidate_dob)}</span></div>
+              <div><span class="text-light">Blood:</span> <span class="text-dark font-medium">${a.candidate_blood_group || '—'}</span></div>
+              <div><span class="text-light">Company:</span> <span class="text-dark font-medium">${a.candidate_company_college || '—'}</span></div>
+              <div><span class="text-light">Parent:</span> <span class="text-dark font-medium">${a.candidate_parent_mobile || '—'}</span></div>
+              <div><span class="text-light">Ref 1:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_1 || '—'}</span></div>
+              <div><span class="text-light">Ref 2:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_2 || '—'}</span></div>
+              ${a.referral_code_used ? `<div class="col-span-2"><span class="text-light">Referral:</span> <span class="text-amber font-bold">${a.referral_code_used}</span></div>` : ''}
+            </div>
+            ${(a.documents && a.documents.length > 0) ? `
+            <div class="mb-3">
+              <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Uploaded Documents</p>
+              <div class="flex flex-wrap gap-2">
+                ${a.documents.map(d => `
+                  <button onclick="previewDocument(${d.id}, '${d.document_type}', '${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-warm rounded-lg text-xs font-semibold text-charcoal hover:bg-sand transition-colors cursor-pointer border border-sand">
+                    <span class="material-symbols-outlined text-sm text-amber">${d.mime_type === 'application/pdf' ? 'picture_as_pdf' : 'image'}</span>
+                    ${d.document_type.replace(/_/g, ' ')}
+                  </button>
+                `).join('')}
+              </div>
+            </div>` : '<p class="text-xs text-danger mb-3">No documents uploaded</p>'}
+            <div class="flex gap-2">
+              <button onclick="approveApplication(${a.id})" class="flex-1 bg-success text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">check</span>Approve & Assign
+              </button>
+              <button onclick="rejectApplication(${a.id})" class="px-4 py-2 border border-danger text-danger rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
+            </div>
+          </div>` : ''}
+        </div>`).join('')}
+    </div>
+
+    ${pendingLinks.length > 0 ? `
+    <div class="mt-6">
+      <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Active Links (${pendingLinks.length})</p>
+      <div class="space-y-2">
+        ${pendingLinks.map(l => `
+          <div class="bg-warm p-3 rounded-xl flex items-center justify-between">
+            <div>
+              <p class="text-xs text-mid">Link type: <span class="font-bold text-dark">${l.link_type === 'single' ? '🔒 Single' : '👥 Bulk'}</span></p>
+              <p class="text-[10px] text-light">Expires: ${fmtDate(l.expires_at)}</p>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-mid bg-white">pending</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+    `}`;
+}
+
+async function approveApplication(invitationId) {
+  // Get available beds for the PG this candidate chose
+  const appsData = await api.listApplications();
+  const app = (appsData.applications || []).find(a => a.id === invitationId);
+  const pgId = app?.preferred_pg_location_id || app?.pg_location_id || currentPgId;
+
+  let bedsHtml = '<option value="">Loading...</option>';
+  let allRooms = [];
+  try {
+    // Load rooms for current PG (same approach as Rooms & Beds section)
+    const roomsData = await api.adminRooms(currentPgId || '');
+    allRooms = roomsData.rooms || [];
+    // If pgId differs from currentPgId, also load rooms for that PG
+    if (pgId && pgId != currentPgId) {
+      const extraData = await api.adminRooms(pgId);
+      const extraRooms = extraData.rooms || [];
+      extraRooms.forEach(r => {
+        if (!allRooms.find(existing => existing.id === r.id)) {
+          allRooms.push(r);
+        }
+      });
+    }
+  } catch(e) { console.error('Failed to load rooms:', e); }
+
+  // Filter beds by selected PG (loose comparison for int/string)
+  function getBedsForPg(filterPgId) {
+    const availableBeds = [];
+    allRooms.forEach(r => {
+      const roomPgId = r.pg_location_id || r.pg_location?.id;
+      if (filterPgId && roomPgId != filterPgId) return;
+      (r.beds || []).forEach(b => {
+        if (b.status === 'available' || !b.status) {
+          availableBeds.push({ id: b.id, label: `Room ${r.room_number} - Bed ${b.bed_number} (₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo)`, rent: b.monthly_rent });
+        }
+      });
+    });
+    return availableBeds;
+  }
+
+  const availableBeds = getBedsForPg(null); // Show all available beds from loaded rooms (already PG-filtered by API)
+  if (availableBeds.length === 0) {
+    bedsHtml = '<option value="">No available beds! Add rooms/beds first.</option>';
+  } else {
+    bedsHtml = '<option value="">Select Room & Bed</option>' + availableBeds.map(b => `<option value="${b.id}" data-rent="${b.rent}">${b.label}</option>`).join('');
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const pgSelectHtml = pgLocations.map(pg => `<option value="${pg.id}" ${pg.id == pgId ? 'selected' : ''}>${pg.name.replace(/\u2013/g, '-')}</option>`).join('');
+
+  // Store for PG change handler
+  window._approveAllRooms = allRooms;
+
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Approve & Assign Tenant</h3>
+      <p class="text-xs text-[#c8813a] font-semibold mb-4">${app?.candidate_name || 'Candidate'}</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">PG Location *</label>
+          <select id="approve-pg" onchange="onApprovePgChange()" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none">
+            ${pgSelectHtml}
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Assign Room & Bed *</label>
+          <select id="approve-bed" onchange="onBedSelect()" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none">
+            ${bedsHtml}
+          </select>
+          <span class="text-[10px] text-[#7a6655] mt-1 block">Only available beds are shown. If empty, add rooms & beds first.</span>
+        </div>
+        ${buildFormField('approve-rent', 'Monthly Rent (₹)', 'number', '8000', '8000')}
+        ${buildFormField('approve-joining', 'Joining Date', 'date', '', today)}
+        ${buildFormField('approve-deposit', 'Security Deposit (₹)', 'number', '0', '0')}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitApproval(${invitationId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#2d6a4f] hover:opacity-90">✓ Approve</button>
+      </div>
+    </div>
+  `);
+}
+
+function onBedSelect() {
+  const select = document.getElementById('approve-bed');
+  const option = select.options[select.selectedIndex];
+  const rent = option.getAttribute('data-rent');
+  if (rent) document.getElementById('approve-rent').value = parseInt(rent);
+}
+
+async function onApprovePgChange() {
+  const pgId = document.getElementById('approve-pg').value;
+  const bedSelect = document.getElementById('approve-bed');
+  bedSelect.innerHTML = '<option value="">Loading beds...</option>';
+
+  try {
+    const roomsData = await api.adminRooms(pgId || '');
+    const rooms = roomsData.rooms || [];
+    window._approveAllRooms = rooms;
+
+    const availableBeds = [];
+    rooms.forEach(r => {
+      (r.beds || []).forEach(b => {
+        if (b.status === 'available' || !b.status) {
+          availableBeds.push({ id: b.id, label: `Room ${r.room_number} - Bed ${b.bed_number} (₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo)`, rent: b.monthly_rent });
+        }
+      });
+    });
+
+    if (availableBeds.length === 0) {
+      bedSelect.innerHTML = '<option value="">No available beds in this PG</option>';
+    } else {
+      bedSelect.innerHTML = '<option value="">Select Room & Bed</option>' + availableBeds.map(b => `<option value="${b.id}" data-rent="${b.rent}">${b.label}</option>`).join('');
+    }
+  } catch(e) {
+    bedSelect.innerHTML = '<option value="">Error loading beds</option>';
+  }
+}
+
+async function submitApproval(invitationId) {
+  const pgId = document.getElementById('approve-pg').value;
+  const bedId = document.getElementById('approve-bed').value;
+  const rent = document.getElementById('approve-rent').value;
+  const joining = document.getElementById('approve-joining').value;
+  const deposit = document.getElementById('approve-deposit').value;
+
+  if (!pgId) { showToast('Please select a PG location', 'error'); return; }
+  if (!bedId) { showToast('Please select a room & bed', 'error'); return; }
+  if (!rent) { showToast('Please enter rent amount', 'error'); return; }
+  if (!joining) { showToast('Please set joining date', 'error'); return; }
+
+  closeModal();
+  try {
+    const result = await api.approveApplication(invitationId, {
+      pg_location_id: parseInt(pgId),
+      bed_id: parseInt(bedId),
+      rent: parseFloat(rent),
+      joining_date: joining,
+      security_deposit: parseFloat(deposit) || 0
+    });
+    showToast(`Tenant approved! ID: ${result.tenant_id}`);
+    showSection('onboarding');
+  } catch(err) {
+    showToast(err.data?.message || 'Approval failed', 'error');
+  }
+}
+
+function rejectApplication(id) {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#c1121f] mb-2">Reject Application</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Provide a reason for rejection. The candidate will not be able to log in after rejection.</p>
+      ${buildFormField('reject-app-reason', 'Reason (Optional)', 'text', 'e.g. Incomplete documents, not eligible')}
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitRejectApplication(${id})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c1121f] hover:opacity-90">Reject</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitRejectApplication(id) {
+  const reason = document.getElementById('reject-app-reason').value.trim();
+  closeModal();
+  try {
+    await api.rejectApplication(id, reason || 'Application rejected.');
+    showToast('Application rejected.');
+    showSection('onboarding');
+  } catch(err) { showToast(err.data?.message || 'Failed to reject', 'error'); }
+}
+
+// Actions
+async function addRoom() {
+  // Build PG options
+  const pgOptions = pgLocations.map(pg => ({value: pg.id.toString(), label: pg.name.replace(/–/g, '-')}));
+
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Add New Room</h3>
+      <div class="space-y-3">
+        ${buildFormField('room-pg', 'PG Location', 'select', '', (currentPgId || '').toString(), pgOptions)}
+        ${buildFormField('room-number', 'Room Number', 'text', 'e.g. 101, 202')}
+        ${buildFormField('room-floor', 'Floor', 'number', '0', '0')}
+        ${buildFormField('room-type', 'Room Type', 'select', '', 'double', [
+          {value:'single',label:'Single'},{value:'double',label:'Double'},
+          {value:'triple',label:'Triple'},{value:'quad',label:'Quad'}
+        ])}
+        ${buildFormField('room-beds', 'Total Beds', 'number', '2', '2')}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitAddRoom()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Create Room</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitAddRoom() {
+  const pgId = document.getElementById('room-pg').value;
+  const roomNumber = document.getElementById('room-number').value.trim();
+  const floor = document.getElementById('room-floor').value;
+  const type = document.getElementById('room-type').value;
+  const beds = document.getElementById('room-beds').value;
+  if (!pgId) { showToast('Please select a PG location', 'error'); return; }
+  if (!roomNumber) { showToast('Room number is required', 'error'); return; }
+  closeModal();
+  try {
+    await api.createRoom({ pg_location_id: parseInt(pgId), room_number: roomNumber, floor: parseInt(floor)||0, room_type: type, total_beds: parseInt(beds)||2 });
+    showToast('Room created successfully!');
+    showSection('rooms');
+  } catch(err) { showToast(err.data?.message || JSON.stringify(err.data?.errors) || 'Failed', 'error'); }
+}
+
+async function addBed(roomId) {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Add Bed</h3>
+      <div class="space-y-3">
+        ${buildFormField('bed-number', 'Bed Number / Label', 'text', 'e.g. A, B, 1, 2')}
+        ${buildFormField('bed-rent', 'Monthly Rent (₹)', 'number', '8000', '8000')}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitAddBed(${roomId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Add Bed</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitAddBed(roomId) {
+  const bedNumber = document.getElementById('bed-number').value.trim();
+  const rent = document.getElementById('bed-rent').value;
+  if (!bedNumber) { showToast('Bed number is required', 'error'); return; }
+  closeModal();
+  try {
+    await api.createBed({ room_id: roomId, bed_number: bedNumber, monthly_rent: parseFloat(rent)||8000 });
+    showToast('Bed added successfully!');
+    showSection('rooms');
+  } catch(err) { showToast(err.data?.message || JSON.stringify(err.data?.errors) || 'Failed', 'error'); }
+}
+
+function deleteBed(bedId, bedNumber) {
+  showConfirm('Delete Bed', `Are you sure you want to delete Bed ${bedNumber}? This cannot be undone.`, async () => {
+    try {
+      await api.deleteBed(bedId);
+      showToast('Bed deleted successfully!');
+      showSection('rooms');
+    } catch(err) { showToast(err.data?.message || 'Failed to delete bed', 'error'); }
+  });
+}
+
+function deleteRoom(roomId, roomNumber, occupiedCount) {
+  if (occupiedCount > 0) {
+    showToast(`Cannot delete Room ${roomNumber} — it has ${occupiedCount} occupied bed(s). Vacate tenants first.`, 'error');
+    return;
+  }
+  showConfirm('Delete Room', `Are you sure you want to delete Room ${roomNumber} and all its beds? This cannot be undone.`, async () => {
+    try {
+      await api.deleteRoom(roomId);
+      showToast('Room deleted successfully!');
+      showSection('rooms');
+    } catch(err) { showToast(err.data?.message || 'Failed to delete room', 'error'); }
+  });
+}
+
+async function verifyPayment(id, amount) {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Verify Payment</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Confirm the verified amount after checking the payment screenshot.</p>
+      ${buildFormField('verify-amount', 'Verified Amount (₹)', 'number', '', amount)}
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitVerifyPayment(${id})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#2d6a4f] hover:opacity-90">✓ Verify</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitVerifyPayment(id) {
+  const amount = document.getElementById('verify-amount').value;
+  if (!amount || parseFloat(amount) <= 0) { showToast('Enter a valid amount', 'error'); return; }
+  closeModal();
+  try {
+    await api.verifyPayment(id, parseFloat(amount));
+    showToast('Payment verified successfully!');
+    showSection('payments');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+async function rejectPayment(id) {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#c1121f] mb-2">Reject Payment</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Provide a reason for rejecting this payment. The tenant will see this.</p>
+      ${buildFormField('reject-reason', 'Rejection Reason', 'text', 'e.g. Screenshot unclear, amount mismatch')}
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitRejectPayment(${id})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c1121f] hover:opacity-90">Reject</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitRejectPayment(id) {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { showToast('Please provide a reason', 'error'); return; }
+  closeModal();
+  try {
+    await api.rejectPayment(id, reason);
+    showToast('Payment rejected.');
+    showSection('payments');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+async function generateOnboarding() {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Generate Onboarding Link</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Choose the type of link to generate.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-2">Link Type</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-3 bg-[#f2ebe0] rounded-xl cursor-pointer border-2 border-[#c8813a] hover:bg-[#e8d8c4]" id="lbl-bulk">
+              <input type="radio" name="onboard-type" value="bulk" checked onchange="toggleOnboardType()" class="text-[#c8813a] focus:ring-[#c8813a]" />
+              <div><p class="text-xs font-bold text-[#1a1410]">Bulk Onboarding</p><p class="text-[10px] text-[#7a6655]">Multiple candidates, same link</p></div>
+            </label>
+            <label class="flex items-center gap-2 p-3 bg-[#f2ebe0] rounded-xl cursor-pointer border-2 border-transparent hover:bg-[#e8d8c4]" id="lbl-single">
+              <input type="radio" name="onboard-type" value="single" onchange="toggleOnboardType()" class="text-[#c8813a] focus:ring-[#c8813a]" />
+              <div><p class="text-xs font-bold text-[#1a1410]">Single Onboarding</p><p class="text-[10px] text-[#7a6655]">One candidate only, one-time use</p></div>
+            </label>
+          </div>
+        </div>
+        ${buildFormField('onboard-expiry', 'Link Expires In (hours)', 'number', '72', '72')}
+        <p class="text-[10px] text-[#7a6655]">72 = 3 days, 168 = 1 week, 720 = 30 days</p>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitGenerateOnboarding()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Generate Link</button>
+      </div>
+    </div>
+  `);
+}
+
+function toggleOnboardType() {
+  const bulk = document.querySelector('input[name="onboard-type"][value="bulk"]').checked;
+  document.getElementById('lbl-bulk').classList.toggle('border-[#c8813a]', bulk);
+  document.getElementById('lbl-bulk').classList.toggle('border-transparent', !bulk);
+  document.getElementById('lbl-single').classList.toggle('border-[#c8813a]', !bulk);
+  document.getElementById('lbl-single').classList.toggle('border-transparent', bulk);
+}
+
+async function submitGenerateOnboarding() {
+  const expiry = document.getElementById('onboard-expiry').value || 72;
+  const type = document.querySelector('input[name="onboard-type"]:checked')?.value || 'bulk';
+  closeModal();
+  try {
+    const result = await api.post('/admin/onboarding/invite', {
+      pg_location_id: currentPgId || null,
+      expires_in_hours: parseInt(expiry),
+      link_type: type
+    });
+    const link = result.link;
+    const expiryDays = Math.round(parseInt(expiry) / 24);
+    const typeLabel = type === 'single' ? 'Single use — expires after one submission.' : 'Multiple people can use this link.';
+
+    openModal(`
+      <div class="p-6 text-center">
+        <div class="text-3xl mb-2">✅</div>
+        <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Link Generated!</h3>
+        <p class="text-[10px] font-bold ${type === 'single' ? 'text-[#c1121f]' : 'text-[#2d6a4f]'} mb-1">${type === 'single' ? '🔒 Single Use' : '👥 Bulk Onboarding'}</p>
+        <p class="text-xs text-[#7a6655] mb-3">${typeLabel}<br>Expires in ${expiry} hours (~${expiryDays} days).</p>
+        <div class="bg-[#f2ebe0] rounded-xl p-3 mb-4 break-all text-xs text-[#3d3028] font-mono select-all cursor-pointer" onclick="navigator.clipboard.writeText('${link}');this.innerHTML='✓ Copied!';setTimeout(()=>this.textContent='${link}',1500)">${link}</div>
+        <div class="flex gap-2">
+          <button onclick="navigator.clipboard.writeText('${link}');showToast('Link copied!')" class="flex-1 py-2.5 rounded-lg text-xs font-bold bg-[#1a1410] text-white hover:opacity-90">📋 Copy Link</button>
+          <a href="https://wa.me/?text=${encodeURIComponent('PG A1 Onboarding: Fill this form to complete your registration\\n' + link)}" target="_blank" class="flex-1 py-2.5 rounded-lg text-xs font-bold bg-[#25D366] text-white text-center hover:opacity-90">💬 Share WhatsApp</a>
+        </div>
+        <button onclick="closeModal()" class="w-full mt-3 py-2 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Done</button>
+      </div>
+    `);
+  } catch(err) { showToast(err.data?.message || 'Failed to generate link', 'error'); }
+}
+
+// ─── Tenant Trash Management ─────────────────────────────────
+function softDeleteTenant(tenantId, tenantName) {
+  showConfirm('Delete Tenant', `Move <strong>${tenantName}</strong> to trash? Their account will be deactivated and bed vacated. You can restore from trash later.`, async () => {
+    try {
+      await api.deleteTenant(tenantId);
+      showToast('Tenant moved to trash.');
+      showSection('tenants');
+    } catch(err) { showToast(err.data?.message || 'Failed to delete tenant', 'error'); }
+  });
+}
+
+async function showTrash() {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="flex justify-center py-12"><span class="material-symbols-outlined text-3xl text-amber animate-spin">progress_activity</span></div>';
+
+  try {
+    const data = await api.adminTenantTrash();
+    const tenants = data.tenants || [];
+
+    main.innerHTML = `
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div>
+          <h2 class="font-display text-2xl font-black text-dark">Trash</h2>
+          <p class="text-sm text-mid">${tenants.length} deleted tenant(s)</p>
+        </div>
+        <button onclick="showSection('tenants')" class="border border-sand text-charcoal px-3 py-2 rounded-lg text-xs font-bold hover:bg-warm flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">arrow_back</span>Back to Tenants
+        </button>
+      </div>
+      ${tenants.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">Trash is empty.</p></div>' : `
+      <div class="bg-white rounded-2xl border border-sand shadow-card overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
+          <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
+            <th class="p-3">Tenant</th><th class="p-3">Tenant ID</th><th class="p-3">PG Location</th><th class="p-3">Deleted</th><th class="p-3">Actions</th>
+          </tr></thead>
+          <tbody>
+            ${tenants.map(t => `
+              <tr class="border-b border-sand/50 hover:bg-warm/30">
+                <td class="p-3">
+                  <p class="font-bold text-dark">${t.user?.name || '—'}</p>
+                  <p class="text-[10px] text-mid">${t.user?.mobile || ''}</p>
+                </td>
+                <td class="p-3 font-mono text-amber text-xs font-bold">${t.tenant_id}</td>
+                <td class="p-3 text-mid text-xs">${t.pg_location?.name || '—'}</td>
+                <td class="p-3 text-xs text-mid">${fmtDate(t.deleted_at)}</td>
+                <td class="p-3">
+                  <div class="flex gap-2">
+                    <button onclick="restoreTenant(${t.id}, '${(t.user?.name||'').replace(/'/g,"\\'")}')" class="text-[10px] font-bold bg-success text-white px-2.5 py-1.5 rounded-lg hover:opacity-90">↩ Restore</button>
+                    <button onclick="permanentDeleteTenant(${t.id}, '${(t.user?.name||'').replace(/'/g,"\\'")}')" class="text-[10px] font-bold bg-danger text-white px-2.5 py-1.5 rounded-lg hover:opacity-90">✕ Delete Forever</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    `;
+  } catch(err) {
+    main.innerHTML = `<p class="text-danger text-center py-8">Failed to load trash. <button onclick="showTrash()" class="text-amber font-bold">Retry</button></p>`;
+  }
+}
+
+function restoreTenant(tenantId, tenantName) {
+  showConfirm('Restore Tenant', `Restore <strong>${tenantName}</strong>? Their account will be reactivated.`, async () => {
+    try {
+      await api.restoreTenant(tenantId);
+      showToast('Tenant restored successfully!');
+      showTrash();
+    } catch(err) { showToast(err.data?.message || 'Failed to restore', 'error'); }
+  });
+}
+
+function permanentDeleteTenant(tenantId, tenantName) {
+  showConfirm('Permanent Delete', `<span class="text-danger font-bold">WARNING:</span> This will permanently delete <strong>${tenantName}</strong> and ALL their data (rents, payments, documents). This CANNOT be undone.`, async () => {
+    try {
+      await api.forceDeleteTenant(tenantId);
+      showToast('Tenant permanently deleted.');
+      showTrash();
+    } catch(err) { showToast(err.data?.message || 'Failed to delete', 'error'); }
+  });
+}
+
+// ─── Change Rent Modal ───────────────────────────────────────
+function showChangeRentModal(tenantId, tenantName, currentRent) {
+  const today = new Date().toISOString().split('T')[0];
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Change Rent</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Updating rent for <strong>${tenantName}</strong> (current: ₹${parseInt(currentRent).toLocaleString('en-IN')})</p>
+      <div class="space-y-3">
+        ${buildFormField('new-rent', 'New Monthly Rent (₹)', 'number', '', currentRent)}
+        ${buildFormField('rent-effective', 'Effective From', 'date', '', today)}
+        ${buildFormField('rent-reason', 'Reason', 'text', 'e.g. Annual revision, room upgrade')}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitChangeRent(${tenantId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Update Rent</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitChangeRent(tenantId) {
+  const newRent = document.getElementById('new-rent').value;
+  const effective = document.getElementById('rent-effective').value;
+  const reason = document.getElementById('rent-reason').value.trim();
+  if (!newRent || !effective) { showToast('Rent and date are required', 'error'); return; }
+  closeModal();
+  try {
+    await api.changeTenantRent(tenantId, { new_rent: parseFloat(newRent), effective_date: effective, reason: reason || null });
+    showToast('Rent updated successfully!');
+    showSection('tenants');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+// ─── Electricity Adjustment Modal (Per Tenant) ───────────────
+async function showElecAdjustModal(tenantId, tenantName, tenantCode) {
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  // Fetch tenant detail to get electricity allocations
+  let unpaidAllocHtml = '';
+  try {
+    const detail = await api.adminTenantDetail(tenantId);
+    const allocations = detail.tenant?.electricity_bill_allocations || [];
+    const unpaid = allocations.filter(a => a.status === 'unpaid');
+    if (unpaid.length > 0) {
+      unpaidAllocHtml = `
+        <div class="mb-4">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Unpaid Electricity Bills</p>
+          <div class="space-y-2">
+            ${unpaid.map(a => {
+              const billMonth = a.electricity_bill?.billing_month ? new Date(a.electricity_bill.billing_month).toLocaleString('en-IN', {month:'short', year:'numeric'}) : '—';
+              return `
+              <div class="flex items-center justify-between bg-[#f2ebe0] rounded-xl px-3 py-2">
+                <div>
+                  <p class="text-xs font-bold text-[#1a1410]">${billMonth}</p>
+                  <p class="text-[10px] text-[#7a6655]">₹${parseInt(a.amount).toLocaleString('en-IN')}</p>
+                </div>
+                <button onclick="markElecPaid(${a.id})" class="text-[10px] font-bold bg-[#2d6a4f] text-white px-3 py-1.5 rounded-lg hover:opacity-90">✓ Mark Paid</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+        <hr class="border-[#e8d8c4] my-3">`;
+    }
+  } catch(e) {}
+
+  openModal(`
+    <div class="p-6 max-h-[80vh] overflow-y-auto">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Electricity — ${tenantName}</h3>
+      <p class="text-sm text-[#7a6655] mb-4"><span class="font-mono text-[#c8813a]">${tenantCode}</span></p>
+      ${unpaidAllocHtml}
+      <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Add New Charge</p>
+      <div class="space-y-3">
+        ${buildFormField('elec-adj-month', 'Billing Month', 'month', '', currentMonth)}
+        ${buildFormField('elec-adj-amount', 'Amount (₹)', 'number', 'e.g. 200')}
+        ${buildFormField('elec-adj-notes', 'Notes (Optional)', 'text', 'e.g. Meter reading adjustment')}
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitElecAdjust(${tenantId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Set Electricity</button>
+      </div>
+    </div>
+  `);
+}
+
+async function markElecPaid(allocationId) {
+  try {
+    await api.markElectricityPaid(allocationId);
+    showToast('Electricity marked as paid!');
+    closeModal();
+    showSection('tenants');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+async function submitElecAdjust(tenantId) {
+  const month = document.getElementById('elec-adj-month').value;
+  const amount = document.getElementById('elec-adj-amount').value;
+  const notes = document.getElementById('elec-adj-notes').value.trim();
+  if (!month || !amount) { showToast('Month and amount are required', 'error'); return; }
+  closeModal();
+  try {
+    await api.adjustTenantElectricity(tenantId, { billing_month: month, amount: parseFloat(amount), notes: notes || null });
+    showToast(`Electricity ₹${amount} set for tenant!`);
+    showSection('tenants');
+  } catch(err) { showToast(err.data?.message || 'Failed to set electricity', 'error'); }
+}
+
+// ─── Change Room Modal ──────────────────────────────────────
+async function showChangeRoomModal(tenantId, tenantName) {
+  let bedsHtml = '<option value="">Loading...</option>';
+  try {
+    const roomsData = await api.adminRooms(currentPgId || '');
+    const rooms = roomsData.rooms || [];
+    const availableBeds = [];
+    rooms.forEach(r => {
+      (r.beds || []).forEach(b => {
+        if (b.status === 'available') {
+          availableBeds.push({ id: b.id, label: `Room ${r.room_number} - Bed ${b.bed_number} (₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo)` });
+        }
+      });
+    });
+    bedsHtml = availableBeds.length === 0
+      ? '<option value="">No available beds</option>'
+      : '<option value="">Select new bed</option>' + availableBeds.map(b => `<option value="${b.id}">${b.label}</option>`).join('');
+  } catch(e) { bedsHtml = '<option value="">Error loading</option>'; }
+
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Change Room/Bed</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Move <strong>${tenantName}</strong> to a different room/bed.</p>
+      <div>
+        <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">New Bed Assignment</label>
+        <select id="new-bed-id" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none">
+          ${bedsHtml}
+        </select>
+        <p class="text-[10px] text-[#7a6655] mt-1">Only available (unoccupied) beds are shown.</p>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitChangeRoom(${tenantId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Move Tenant</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitChangeRoom(tenantId) {
+  const bedId = document.getElementById('new-bed-id').value;
+  if (!bedId) { showToast('Select a bed', 'error'); return; }
+  closeModal();
+  try {
+    // Use the allocate bed API - we need to add this endpoint
+    await api.post(`/admin/tenants/${tenantId}/change-bed`, { bed_id: parseInt(bedId) });
+    showToast('Tenant moved successfully!');
+    showSection('tenants');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+// ─── Generate Rent Modal ────────────────────────────────────
+function showGenerateRentModal() {
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Generate Monthly Rent</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Creates rent entries for all active tenants for the selected month.</p>
+      ${buildFormField('gen-rent-month', 'Billing Month', 'month', '', currentMonth)}
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitGenerateRent()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Generate</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitGenerateRent() {
+  const month = document.getElementById('gen-rent-month').value;
+  if (!month) { showToast('Select a month', 'error'); return; }
+  closeModal();
+  try {
+    const result = await api.generateRent(month);
+    showToast(result.message);
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+// ─── Electricity Bill Modal ─────────────────────────────────
+async function showElectricityBillModal() {
+  let roomsHtml = '<option value="">Loading...</option>';
+  try {
+    const data = await api.adminRooms(currentPgId || '');
+    const rooms = data.rooms || [];
+    roomsHtml = rooms.length === 0
+      ? '<option value="">No rooms found</option>'
+      : '<option value="">Select Room</option>' + rooms.map(r => `<option value="${r.id}">Room ${r.room_number} (${r.room_type}, ${r.pg_location?.name?.replace(/–/g,'-') || ''})</option>`).join('');
+  } catch(e) { roomsHtml = '<option value="">Error</option>'; }
+
+  const currentMonth = new Date().toISOString().substring(0, 7);
+
+  openModal(`
+    <div class="p-6 max-h-[80vh] overflow-y-auto">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Add Electricity Bill</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Enter readings & rate. Cost will be split equally among active tenants in the room.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Room *</label>
+          <select id="elec-room" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none">
+            ${roomsHtml}
+          </select>
+        </div>
+        ${buildFormField('elec-month', 'Billing Month', 'month', '', currentMonth)}
+        ${buildFormField('elec-prev-reading', 'Previous Meter Reading', 'number', 'e.g. 1200')}
+        ${buildFormField('elec-curr-reading', 'Current Meter Reading', 'number', 'e.g. 1350')}
+        ${buildFormField('elec-units', 'Total Units Consumed', 'number', 'Auto-calculated or enter manually')}
+        ${buildFormField('elec-rate', 'Rate per Unit (₹)', 'number', 'e.g. 8', '8')}
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Previous Meter Image</label>
+          <input type="file" id="elec-prev-img" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028] hover:file:bg-[#e8d8c4]" />
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Current Meter Image</label>
+          <input type="file" id="elec-curr-img" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028] hover:file:bg-[#e8d8c4]" />
+        </div>
+        <div class="bg-[#f2ebe0] rounded-xl p-3">
+          <p class="text-xs text-[#7a6655]">Total = Units × Rate. Split equally among active tenants in the room. Meter images will be visible to tenants.</p>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitElectricityBill()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Create Bill</button>
+      </div>
+    </div>
+  `);
+
+  // Auto-calculate units when readings change
+  document.getElementById('elec-prev-reading').addEventListener('input', autoCalcUnits);
+  document.getElementById('elec-curr-reading').addEventListener('input', autoCalcUnits);
+}
+
+function autoCalcUnits() {
+  const prev = parseFloat(document.getElementById('elec-prev-reading').value) || 0;
+  const curr = parseFloat(document.getElementById('elec-curr-reading').value) || 0;
+  if (curr > prev) {
+    document.getElementById('elec-units').value = (curr - prev).toFixed(2);
+  }
+}
+
+async function submitElectricityBill() {
+  const roomId = document.getElementById('elec-room').value;
+  const month = document.getElementById('elec-month').value;
+  const units = document.getElementById('elec-units').value;
+  const rate = document.getElementById('elec-rate').value;
+  const prevReading = document.getElementById('elec-prev-reading').value;
+  const currReading = document.getElementById('elec-curr-reading').value;
+  const prevImg = document.getElementById('elec-prev-img').files[0];
+  const currImg = document.getElementById('elec-curr-img').files[0];
+
+  if (!roomId || !month || !units || !rate) { showToast('Room, month, units, and rate are required', 'error'); return; }
+  closeModal();
+
+  try {
+    const formData = new FormData();
+    formData.append('room_id', parseInt(roomId));
+    formData.append('billing_month', month);
+    formData.append('total_units', parseFloat(units));
+    formData.append('rate_per_unit', parseFloat(rate));
+    if (prevReading) formData.append('previous_reading', parseFloat(prevReading));
+    if (currReading) formData.append('current_reading', parseFloat(currReading));
+    if (prevImg) formData.append('previous_meter_image', prevImg);
+    if (currImg) formData.append('current_meter_image', currImg);
+
+    await api.upload('/admin/electricity-bills', formData);
+    showToast('Electricity bill created and split among tenants!');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+// ─── Document Preview ────────────────────────────────────────
+async function previewDocument(docId, docType, mimeType) {
+  const token = api.getToken();
+  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+
+  openModal(`
+    <div class="p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-display text-base font-bold text-[#1a1410] capitalize">${docType.replace(/_/g, ' ')}</h3>
+        <button onclick="closeModal()" class="text-[#7a6655] hover:text-[#1a1410]">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="bg-[#f2ebe0] rounded-xl overflow-hidden flex items-center justify-center min-h-[200px]" id="doc-preview-container">
+        <span class="material-symbols-outlined text-3xl text-[#c8813a] animate-spin">progress_activity</span>
+      </div>
+      <button onclick="openDocInNewTab(${docId})" class="block w-full mt-3 text-center text-sm font-bold text-[#c8813a] hover:underline">
+        Open full size in new tab ↗
+      </button>
+    </div>
+  `);
+
+  try {
+    const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!resp.ok) throw new Error('Failed');
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const container = document.getElementById('doc-preview-container');
+    if (mimeType === 'application/pdf') {
+      container.innerHTML = `<embed src="${objectUrl}" type="application/pdf" class="w-full h-[400px] rounded-lg" />`;
+    } else {
+      container.innerHTML = `<img src="${objectUrl}" class="max-w-full max-h-[400px] rounded-lg object-contain" />`;
+    }
+  } catch (e) {
+    document.getElementById('doc-preview-container').innerHTML = `<p class="text-[#c1121f] text-sm p-4">Failed to load document.</p>`;
+  }
+}
+
+async function openDocInNewTab(docId) {
+  const token = api.getToken();
+  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+  const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+  const blob = await resp.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+
+// ─── Notes Section ──────────────────────────────────────────
+async function renderNotes() {
+  const main = document.getElementById('main');
+  try {
+    const data = await api.getNotes();
+    const notes = data.notes || [];
+
+    main.innerHTML = `
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <h2 class="font-display text-2xl font-black text-dark">Notes</h2>
+        <button onclick="showAddNoteModal()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">add</span>Add Note
+        </button>
+      </div>
+      ${notes.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No notes yet. Add your first note!</p></div>' : `
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${notes.map(n => `
+          <div class="bg-white p-4 rounded-2xl border ${n.is_pinned ? 'border-amber' : 'border-sand'} shadow-card relative">
+            ${n.is_pinned ? '<span class="absolute top-2 right-2 text-amber text-sm">📌</span>' : ''}
+            <h4 class="font-bold text-dark text-sm pr-6">${n.title}</h4>
+            <p class="text-xs text-mid mt-2 whitespace-pre-wrap">${n.description || ''}</p>
+            <div class="flex items-center justify-between mt-3 pt-2 border-t border-sand/50">
+              <p class="text-[10px] text-light">${fmtDate(n.updated_at)}</p>
+              <div class="flex gap-2">
+                <button onclick="showEditNoteModal(${n.id}, '${n.title.replace(/'/g,"\\'")}', \`${(n.description||'').replace(/`/g,'\\`').replace(/\\/g,'\\\\')}\`, ${n.is_pinned})" class="text-[10px] font-bold text-amber hover:underline">Edit</button>
+                <button onclick="deleteNote(${n.id}, '${n.title.replace(/'/g,"\\'")}')" class="text-[10px] font-bold text-danger hover:underline">Delete</button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`}
+    `;
+  } catch(err) {
+    main.innerHTML = `<p class="text-danger text-center py-8">Failed to load notes. <button onclick="renderNotes()" class="text-amber font-bold">Retry</button></p>`;
+  }
+}
+
+function showAddNoteModal() {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Add Note</h3>
+      <div class="space-y-3">
+        ${buildFormField('note-title', 'Title', 'text', 'e.g. Monthly reminder, Important contact')}
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Description</label>
+          <textarea id="note-desc" placeholder="Write your note here..." rows="4"
+            class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] focus:border-[#c8813a] outline-none resize-y"></textarea>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="note-pinned" class="rounded border-[#e8d8c4] text-[#c8813a] focus:ring-[#c8813a]" />
+          <span class="text-xs text-[#3d3028] font-medium">📌 Pin this note</span>
+        </label>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitAddNote()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Save Note</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitAddNote() {
+  const title = document.getElementById('note-title').value.trim();
+  const description = document.getElementById('note-desc').value.trim();
+  const isPinned = document.getElementById('note-pinned').checked;
+
+  if (!title) { showToast('Title is required', 'error'); return; }
+  closeModal();
+  try {
+    await api.createNote({ title, description, is_pinned: isPinned, pg_location_id: currentPgId || null });
+    showToast('Note saved!');
+    showSection('notes');
+  } catch(err) { showToast(err.data?.message || 'Failed to save note', 'error'); }
+}
+
+function showEditNoteModal(noteId, title, description, isPinned) {
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Edit Note</h3>
+      <div class="space-y-3">
+        ${buildFormField('note-title', 'Title', 'text', '', title)}
+        <div>
+          <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Description</label>
+          <textarea id="note-desc" rows="4"
+            class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] focus:border-[#c8813a] outline-none resize-y">${description}</textarea>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="note-pinned" ${isPinned ? 'checked' : ''} class="rounded border-[#e8d8c4] text-[#c8813a] focus:ring-[#c8813a]" />
+          <span class="text-xs text-[#3d3028] font-medium">📌 Pin this note</span>
+        </label>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitEditNote(${noteId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Update Note</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitEditNote(noteId) {
+  const title = document.getElementById('note-title').value.trim();
+  const description = document.getElementById('note-desc').value.trim();
+  const isPinned = document.getElementById('note-pinned').checked;
+
+  if (!title) { showToast('Title is required', 'error'); return; }
+  closeModal();
+  try {
+    await api.updateNote(noteId, { title, description, is_pinned: isPinned });
+    showToast('Note updated!');
+    showSection('notes');
+  } catch(err) { showToast(err.data?.message || 'Failed to update', 'error'); }
+}
+
+function deleteNote(noteId, title) {
+  showConfirm('Delete Note', `Delete "<strong>${title}</strong>"? This cannot be undone.`, async () => {
+    try {
+      await api.deleteNote(noteId);
+      showToast('Note deleted.');
+      showSection('notes');
+    } catch(err) { showToast(err.data?.message || 'Failed to delete', 'error'); }
+  });
+}
+
+// ─── Expenses Section ───────────────────────────────────────
+let expenseMonth = new Date().toISOString().substring(0, 7);
+
+async function renderExpenses() {
+  const main = document.getElementById('main');
+  try {
+    const data = await api.getExpenses(expenseMonth, currentPgId || '');
+    const expenses = data.expenses || [];
+    const total = data.total || 0;
+    main.innerHTML = renderExpensesHTML(expenses, total);
+  } catch(err) {
+    main.innerHTML = `<p class="text-danger text-center py-8">Failed to load expenses. <button onclick="renderExpenses()" class="text-amber font-bold">Retry</button></p>`;
+  }
+}
+
+function renderExpensesHTML(expenses, total) {
+  return `
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+      <div>
+        <h2 class="font-display text-2xl font-black text-dark">Expenses</h2>
+        <p class="text-sm text-mid">Total: <span class="font-bold text-dark">₹${parseInt(total).toLocaleString('en-IN')}</span></p>
+      </div>
+      <button onclick="showAddExpenseModal()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">add</span>Add Expense
+      </button>
+    </div>
+    <div class="flex items-center gap-3 mb-4">
+      <input type="month" id="expense-month-filter" value="${expenseMonth}" onchange="expenseMonth=this.value;renderExpenses()"
+        class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber focus:border-amber outline-none" />
+      <button onclick="expenseMonth='';renderExpenses()" class="text-xs text-amber font-bold hover:underline">Show All</button>
+    </div>
+    ${expenses.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No expenses for this period.</p></div>' : `
+    <div class="bg-white rounded-2xl border border-sand shadow-card overflow-x-auto">
+      <table class="w-full text-sm min-w-[600px]">
+        <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
+          <th class="p-3">Date</th><th class="p-3">Title</th><th class="p-3">Amount</th><th class="p-3">Bill</th><th class="p-3">Actions</th>
+        </tr></thead>
+        <tbody>
+          ${expenses.map(e => `
+            <tr class="border-b border-sand/50 hover:bg-warm/30">
+              <td class="p-3 text-xs text-mid">${fmtDate(e.expense_date)}</td>
+              <td class="p-3"><p class="font-bold text-dark">${e.title}</p>${e.notes ? `<p class="text-[10px] text-mid mt-0.5">${e.notes}</p>` : ''}</td>
+              <td class="p-3 font-bold text-dark">₹${parseInt(e.amount).toLocaleString('en-IN')}</td>
+              <td class="p-3">${e.bill_image_path ? `<button onclick="viewExpenseImage(${e.id})" class="text-[10px] font-bold text-amber hover:underline">📷 View</button>` : '<span class="text-[10px] text-light">—</span>'}</td>
+              <td class="p-3"><div class="flex gap-2">
+                <button onclick="showEditExpenseModal(${e.id}, '${e.title.replace(/'/g,"\\'")}', ${e.amount}, '${e.expense_date}', '${(e.notes||'').replace(/'/g,"\\'")}')" class="text-[10px] font-bold text-amber hover:underline">Edit</button>
+                <button onclick="deleteExpense(${e.id}, '${e.title.replace(/'/g,"\\'")}')" class="text-[10px] font-bold text-danger hover:underline">Delete</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="border-t-2 border-sand"><td class="p-3"></td><td class="p-3 font-bold text-dark text-xs">TOTAL</td><td class="p-3 font-bold text-dark">₹${parseInt(total).toLocaleString('en-IN')}</td><td colspan="2"></td></tr></tfoot>
+      </table>
+    </div>`}`;
+}
+
+function showAddExpenseModal() {
+  const today = new Date().toISOString().split('T')[0];
+  openModal(`<div class="p-6"><h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Add Expense</h3><div class="space-y-3">
+    ${buildFormField('exp-title', 'Title', 'text', 'e.g. Electricity bill, Plumber')}
+    ${buildFormField('exp-amount', 'Amount (₹)', 'number', '0')}
+    ${buildFormField('exp-date', 'Date', 'date', '', today)}
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Notes (Optional)</label><textarea id="exp-notes" placeholder="Additional details..." rows="2" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none resize-y"></textarea></div>
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Bill Screenshot (Optional)</label><input type="file" id="exp-image" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028] hover:file:bg-[#e8d8c4]" /></div>
+  </div><div class="flex gap-3 mt-5"><button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button><button onclick="submitAddExpense()" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Save Expense</button></div></div>`);
+}
+
+async function submitAddExpense() {
+  const title = document.getElementById('exp-title').value.trim();
+  const amount = document.getElementById('exp-amount').value;
+  const date = document.getElementById('exp-date').value;
+  const notes = document.getElementById('exp-notes').value.trim();
+  const image = document.getElementById('exp-image').files[0];
+  if (!title || !amount || !date) { showToast('Title, amount, and date are required', 'error'); return; }
+  closeModal();
+  const formData = new FormData();
+  formData.append('title', title); formData.append('amount', parseFloat(amount)); formData.append('expense_date', date);
+  if (notes) formData.append('notes', notes);
+  if (currentPgId) formData.append('pg_location_id', currentPgId);
+  if (image) formData.append('bill_image', image);
+  try { await api.createExpense(formData); showToast('Expense added!'); showSection('expenses'); }
+  catch(err) { showToast(err.data?.message || 'Failed to save', 'error'); }
+}
+
+function showEditExpenseModal(expenseId, title, amount, date, notes) {
+  openModal(`<div class="p-6"><h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Edit Expense</h3><div class="space-y-3">
+    ${buildFormField('exp-title', 'Title', 'text', '', title)}
+    ${buildFormField('exp-amount', 'Amount (₹)', 'number', '', amount)}
+    ${buildFormField('exp-date', 'Date', 'date', '', date)}
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Notes (Optional)</label><textarea id="exp-notes" rows="2" class="w-full bg-[#f2ebe0] text-sm px-3 py-2.5 rounded-xl border border-[#e8d8c4] focus:ring-2 focus:ring-[#c8813a] outline-none resize-y">${notes}</textarea></div>
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Replace Bill Image (Optional)</label><input type="file" id="exp-image" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028] hover:file:bg-[#e8d8c4]" /></div>
+  </div><div class="flex gap-3 mt-5"><button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button><button onclick="submitEditExpense(${expenseId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Update</button></div></div>`);
+}
+
+async function submitEditExpense(expenseId) {
+  const title = document.getElementById('exp-title').value.trim();
+  const amount = document.getElementById('exp-amount').value;
+  const date = document.getElementById('exp-date').value;
+  const notes = document.getElementById('exp-notes').value.trim();
+  const image = document.getElementById('exp-image').files[0];
+  if (!title || !amount || !date) { showToast('Title, amount, and date are required', 'error'); return; }
+  closeModal();
+  const formData = new FormData();
+  formData.append('title', title); formData.append('amount', parseFloat(amount)); formData.append('expense_date', date);
+  formData.append('notes', notes || '');
+  if (image) formData.append('bill_image', image);
+  try { await api.updateExpense(expenseId, formData); showToast('Expense updated!'); showSection('expenses'); }
+  catch(err) { showToast(err.data?.message || 'Failed to update', 'error'); }
+}
+
+function deleteExpense(expenseId, title) {
+  showConfirm('Delete Expense', `Delete "<strong>${title}</strong>"? This cannot be undone.`, async () => {
+    try { await api.deleteExpense(expenseId); showToast('Expense deleted.'); showSection('expenses'); }
+    catch(err) { showToast(err.data?.message || 'Failed to delete', 'error'); }
+  });
+}
+
+async function viewExpenseImage(expenseId) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div class="text-center"><span class="material-symbols-outlined text-3xl text-white animate-spin">progress_activity</span></div>';
+  document.body.appendChild(overlay);
+  try {
+    const resp = await fetch(`${API_BASE}/admin/expenses/${expenseId}/image`, { headers: { 'Authorization': `Bearer ${api.getToken()}` } });
+    if (!resp.ok) throw new Error('Not found');
+    const blob = await resp.blob();
+    overlay.innerHTML = `<div class="relative max-w-lg w-full"><button onclick="this.closest('.fixed').remove()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-amber">&times;</button><img src="${URL.createObjectURL(blob)}" alt="Bill" class="w-full rounded-xl shadow-2xl" style="max-height:80vh;object-fit:contain;" /></div>`;
+  } catch(e) { overlay.remove(); showToast('Failed to load image', 'error'); }
+}
+
+// ─── Electricity Section ────────────────────────────────────
+let elecMonth = new Date().toISOString().substring(0, 7);
+
+async function renderElectricity() {
+  const main = document.getElementById('main');
+  try {
+    const [roomsData, billsData] = await Promise.all([
+      api.adminRooms(currentPgId || ''),
+      api.get(`/admin/electricity-bills${currentPgId ? '?pg_location_id=' + currentPgId : ''}`)
+    ]);
+    const rooms = roomsData.rooms || [];
+    const allBills = billsData.bills || [];
+    const monthBills = elecMonth ? allBills.filter(b => b.billing_month && b.billing_month.startsWith(elecMonth)) : allBills;
+    const billsByRoom = {};
+    monthBills.forEach(b => { billsByRoom[b.room_id] = b; });
+    const statusFilter = document.getElementById('elec-status-filter')?.value || '';
+
+    main.innerHTML = `
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <h2 class="font-display text-2xl font-black text-dark">Electricity Bills</h2>
+        <div class="flex items-center gap-2 flex-wrap">
+          <select id="elec-status-filter" onchange="renderElectricity()" class="text-xs px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber outline-none">
+            <option value="">All Status</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Partial</option>
+          </select>
+          <input type="month" value="${elecMonth}" onchange="elecMonth=this.value;renderElectricity()"
+            class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber outline-none" />
+          <button onclick="exportElecExcel()" class="bg-success text-white px-3 py-2 rounded-lg text-xs font-bold hover:opacity-90 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">download</span>Export Excel
+          </button>
+        </div>
+      </div>
+      ${rooms.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No rooms found.</p></div>' : `
+      <div class="bg-white rounded-2xl border border-sand shadow-card overflow-x-auto">
+        <table class="w-full text-sm min-w-[750px]">
+          <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand bg-warm">
+            <th class="p-3">Room</th><th class="p-3">Last Unit</th><th class="p-3">Current Unit</th><th class="p-3">Units Used</th><th class="p-3">Rate (₹)</th><th class="p-3">Total (₹)</th><th class="p-3">Tenants</th><th class="p-3">Per Person</th><th class="p-3">Status</th><th class="p-3">Meter 📷</th><th class="p-3">Action</th>
+          </tr></thead>
+          <tbody>${rooms.map(r => {
+            const bill = billsByRoom[r.id];
+            const tc = (r.beds||[]).filter(b=>b.status==='occupied').length;
+            if (statusFilter && bill) { const al=bill.allocations||[]; const ap=al.length>0&&al.every(a=>a.status==='paid'); const sp=al.some(a=>a.status==='paid'); const bs=ap?'paid':sp?'partial':'unpaid'; if(statusFilter!==bs) return ''; }
+            if (statusFilter && !bill) return '';
+            if (bill) return `<tr class="border-b border-sand/50 bg-success-bg/20"><td class="p-3 font-bold text-dark">Room ${r.room_number}</td><td class="p-3">${bill.previous_reading||'—'}</td><td class="p-3">${bill.current_reading||'—'}</td><td class="p-3 font-bold">${bill.total_units}</td><td class="p-3">₹${bill.rate_per_unit}</td><td class="p-3 font-bold">₹${parseInt(bill.total_amount).toLocaleString('en-IN')}</td><td class="p-3 text-center">${bill.active_tenants_count}</td><td class="p-3 font-bold text-amber">₹${parseInt(bill.per_tenant_amount).toLocaleString('en-IN')}</td><td class="p-3">${(()=>{const al=bill.allocations||[];const ap=al.length>0&&al.every(a=>a.status==='paid');const sp=al.some(a=>a.status==='paid');return ap?'<span class="text-[10px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full">Paid</span>':sp?'<span class="text-[10px] font-bold text-amber bg-warm px-2 py-0.5 rounded-full">Partial</span>':'<span class="text-[10px] font-bold text-danger bg-danger-bg px-2 py-0.5 rounded-full">Unpaid</span>';})()}</td><td class="p-3"><div class="flex gap-1">${bill.previous_meter_image?`<button onclick="viewElecMeter(${bill.id},'previous')" class="text-[10px] text-amber font-bold">Prev</button>`:''} ${bill.current_meter_image?`<button onclick="viewElecMeter(${bill.id},'current')" class="text-[10px] text-amber font-bold">Curr</button>`:''}</div></td><td class="p-3"><span class="text-[10px] font-bold text-success">✓ Saved</span></td></tr>`;
+            return `<tr class="border-b border-sand/50 hover:bg-warm/30"><td class="p-3 font-bold text-dark">Room ${r.room_number}</td><td class="p-3"><input type="number" id="prev-${r.id}" placeholder="0" class="w-20 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><input type="number" id="curr-${r.id}" placeholder="0" class="w-20 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><span id="units-${r.id}" class="font-bold">0</span></td><td class="p-3"><input type="number" id="rate-${r.id}" value="10" class="w-14 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><span id="total-${r.id}" class="font-bold">₹0</span></td><td class="p-3 text-center">${tc||'—'}</td><td class="p-3"><span id="pp-${r.id}" class="font-bold text-amber">${tc?'₹0':'—'}</span></td><td class="p-3"><span class="text-[10px] text-light">—</span></td><td class="p-3"><input type="file" id="prev-img-${r.id}" accept="image/*" class="hidden"/><input type="file" id="curr-img-${r.id}" accept="image/*" class="hidden"/><button type="button" onclick="document.getElementById('prev-img-${r.id}').click()" class="text-[10px] text-amber font-bold">+P</button> <button type="button" onclick="document.getElementById('curr-img-${r.id}').click()" class="text-[10px] text-amber font-bold">+C</button></td><td class="p-3"><button type="button" onclick="saveElecRow(${r.id},${tc})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Save</button></td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+      <p class="text-xs text-mid mt-3">💡 Enter Last & Current readings. Total = (Current − Last) × Rate. Auto-splits among room tenants.</p>`}`;
+  } catch(err) { main.innerHTML = `<p class="text-danger text-center py-8">Failed. <button onclick="renderElectricity()" class="text-amber font-bold">Retry</button></p>`; }
+}
+
+function calcRow(roomId) {
+  const prev = parseFloat(document.getElementById(`prev-${roomId}`)?.value) || 0;
+  const curr = parseFloat(document.getElementById(`curr-${roomId}`)?.value) || 0;
+  const rate = parseFloat(document.getElementById(`rate-${roomId}`)?.value) || 10;
+  const units = curr > prev ? (curr - prev) : 0;
+  const total = units * rate;
+  document.getElementById(`units-${roomId}`).textContent = units.toFixed(1);
+  document.getElementById(`total-${roomId}`).textContent = '₹' + parseInt(total).toLocaleString('en-IN');
+  const ppEl = document.getElementById(`pp-${roomId}`);
+  if (ppEl && ppEl.textContent !== '—') {
+    const row = document.getElementById(`total-${roomId}`).closest('tr');
+    const tcCell = row?.querySelectorAll('td')[6];
+    const tc = parseInt(tcCell?.textContent) || 1;
+    ppEl.textContent = tc > 0 ? '₹' + parseInt(total / tc).toLocaleString('en-IN') : '—';
+  }
+}
+
+async function saveElecRow(roomId, tenantCount) {
+  const prev = document.getElementById(`prev-${roomId}`)?.value;
+  const curr = document.getElementById(`curr-${roomId}`)?.value;
+  const rate = document.getElementById(`rate-${roomId}`)?.value;
+  const prevNum = parseFloat(prev)||0, currNum = parseFloat(curr)||0, rateNum = parseFloat(rate)||10;
+  const units = currNum > prevNum ? (currNum - prevNum) : 0;
+  if (units <= 0) { showToast('Current must be greater than Last', 'error'); return; }
+  const fd = new FormData();
+  fd.append('room_id', roomId); fd.append('billing_month', elecMonth);
+  fd.append('total_units', units); fd.append('rate_per_unit', rateNum);
+  fd.append('previous_reading', prevNum); fd.append('current_reading', currNum);
+  const prevImg = document.getElementById(`prev-img-${roomId}`)?.files[0];
+  const currImg = document.getElementById(`curr-img-${roomId}`)?.files[0];
+  if (prevImg) fd.append('previous_meter_image', prevImg);
+  if (currImg) fd.append('current_meter_image', currImg);
+  try { const r = await api.upload('/admin/electricity-bills', fd); showToast(r.message||'Saved!'); renderElectricity(); }
+  catch(err) { showToast(err.data?.message||'Failed', 'error'); }
+}
+
+async function viewElecMeter(billId, type) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div class="text-center"><span class="material-symbols-outlined text-3xl text-white animate-spin">progress_activity</span></div>';
+  document.body.appendChild(overlay);
+  try {
+    const resp = await fetch(`${API_BASE}/admin/electricity-bills/${billId}/meter-image/${type}`, { headers: { 'Authorization': `Bearer ${api.getToken()}` } });
+    if (!resp.ok) throw new Error();
+    const blob = await resp.blob();
+    overlay.innerHTML = `<div class="relative max-w-lg w-full"><button onclick="this.closest('.fixed').remove()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-amber">&times;</button><p class="text-white text-sm mb-2 text-center font-bold">${type==='previous'?'Previous':'Current'} Meter</p><img src="${URL.createObjectURL(blob)}" class="w-full rounded-xl shadow-2xl" style="max-height:80vh;object-fit:contain;" /></div>`;
+  } catch(e) { overlay.remove(); showToast('Failed to load image', 'error'); }
+}
+
+function exportElecExcel() {
+  const table = document.querySelector('#main table');
+  if (!table) { showToast('No data to export', 'error'); return; }
+  let csv = '';
+  table.querySelectorAll('tr').forEach(row => {
+    const cells = row.querySelectorAll('th, td');
+    const rowData = [];
+    cells.forEach(cell => { let t = cell.textContent.trim().replace(/\s+/g,' ').replace(/,/g,''); rowData.push('"'+t+'"'); });
+    rowData.splice(-2, 2); // Remove Meter & Action columns
+    csv += rowData.join(',') + '\n';
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `electricity-bills-${elecMonth||'all'}.csv`;
+  a.click();
+  showToast('Excel file downloaded!');
+}
+
+init();
+</script>
+</body>
+</html>
