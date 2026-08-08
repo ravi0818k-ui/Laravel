@@ -897,6 +897,9 @@ async function approveApplication(invitationId) {
     return availableBeds;
   }
 
+  // Check if existing tenant (room info stored in referral_code_used as "ROOM:xxx")
+  const roomRef = app?.referral_code_used?.startsWith('ROOM:') ? app.referral_code_used.replace('ROOM:', '') : '';
+
   const availableBeds = getBedsForPg(null, roomRef); // Show all available beds, sorted by tenant's room
   if (availableBeds.length === 0) {
     bedsHtml = '<option value="">No available beds! Add rooms/beds first.</option>';
@@ -909,9 +912,6 @@ async function approveApplication(invitationId) {
 
   // Store for PG change handler
   window._approveAllRooms = allRooms;
-
-  // Check if existing tenant (room info stored in referral_code_used as "ROOM:xxx")
-  const roomRef = app?.referral_code_used?.startsWith('ROOM:') ? app.referral_code_used.replace('ROOM:', '') : '';
 
   openModal(`
     <div class="p-6">
@@ -1673,7 +1673,7 @@ async function submitElectricityBill() {
 // ─── Document Preview ────────────────────────────────────────
 async function previewDocument(docId, docType, mimeType) {
   const token = api.getToken();
-  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+  const url = `${API_BASE}/admin/documents/${docId}/view`;
 
   openModal(`
     <div class="p-4">
@@ -1710,7 +1710,7 @@ async function previewDocument(docId, docType, mimeType) {
 
 async function openDocInNewTab(docId) {
   const token = api.getToken();
-  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+  const url = `${API_BASE}/admin/documents/${docId}/view`;
   const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
   const blob = await resp.blob();
   window.open(URL.createObjectURL(blob), '_blank');

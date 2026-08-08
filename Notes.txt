@@ -61,3 +61,21 @@ Tenant: http://127.0.0.1:8000/dashboard/tenant.html
 
 
 8 Aug 2026-Onboarding
+9100000009
+India@123
+
+
+###
+Manage MySQL Databases
+Setup: 
+pga1db-35303837f495
+8[SlJFQ2*%|_
+
+###
+for .env file: 
+DB_HOST=sdb-81.hosting.stackcp.net
+DB_DATABASE=pga1db-35303837f495
+DB_USERNAME=pga1db-35303837f495
+DB_PASSWORD=<the password you just set>
+
+9166785675

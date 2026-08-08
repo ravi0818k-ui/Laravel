@@ -2,7 +2,9 @@
  * PG A1 Management System — API Client Module
  * Handles auth, token management, and all API calls.
  */
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:8000/api/v1'
+  : '/api/v1';
 
 const api = {
   // ─── Token Management ─────────────────────────────────────────

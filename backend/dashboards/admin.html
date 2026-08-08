@@ -1674,7 +1674,7 @@ async function submitElectricityBill() {
 // ─── Document Preview ────────────────────────────────────────
 async function previewDocument(docId, docType, mimeType) {
   const token = api.getToken();
-  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+  const url = `${API_BASE}/admin/documents/${docId}/view`;
 
   openModal(`
     <div class="p-4">
@@ -1711,7 +1711,7 @@ async function previewDocument(docId, docType, mimeType) {
 
 async function openDocInNewTab(docId) {
   const token = api.getToken();
-  const url = `http://127.0.0.1:8000/api/v1/admin/documents/${docId}/view`;
+  const url = `${API_BASE}/admin/documents/${docId}/view`;
   const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
   const blob = await resp.blob();
   window.open(URL.createObjectURL(blob), '_blank');
