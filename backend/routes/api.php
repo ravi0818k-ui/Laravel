@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('tenant')->middleware('role:tenant')->group(function () {
             Route::get('/dashboard', [TenantController::class, 'dashboard']);
             Route::get('/profile', [TenantController::class, 'profile']);
+            Route::post('/change-password', [TenantController::class, 'changePassword']);
             Route::get('/rents', [RentController::class, 'tenantIndex']);
             Route::get('/electricity', [TenantController::class, 'electricity']);
             Route::get('/electricity/{bill}/meter-image/{type}', [\App\Http\Controllers\Api\ElectricityController::class, 'viewMeterImage']);
@@ -61,6 +62,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/tenants/{tenant}/change-bed', [AdminTenantController::class, 'changeBed']);
             Route::post('/tenants/{tenant}/reset-password', [AdminTenantController::class, 'resetPassword']);
             Route::post('/tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate']);
+            Route::post('/tenants/{tenant}/offboard', [AdminTenantController::class, 'offboard']);
 
             // Payments
             Route::get('/payments', [PaymentController::class, 'adminIndex']);
@@ -94,6 +96,7 @@ Route::prefix('v1')->group(function () {
 
             // Rent generation
             Route::post('/rents/generate', [RentController::class, 'generate']);
+            Route::post('/rents/generate-individual', [RentController::class, 'generateIndividual']);
 
             // Notes
             Route::get('/notes', [NoteController::class, 'index']);
@@ -110,6 +113,8 @@ Route::prefix('v1')->group(function () {
 
             // Electricity bills
             Route::post('/electricity-bills', [\App\Http\Controllers\Api\ElectricityController::class, 'store']);
+            Route::post('/electricity-bills/{bill}/update', [\App\Http\Controllers\Api\ElectricityController::class, 'update']);
+            Route::delete('/electricity-bills/{bill}', [\App\Http\Controllers\Api\ElectricityController::class, 'destroy']);
             Route::get('/electricity-bills', [\App\Http\Controllers\Api\ElectricityController::class, 'index']);
             Route::get('/electricity-bills/{bill}/meter-image/{type}', [\App\Http\Controllers\Api\ElectricityController::class, 'viewMeterImage']);
             Route::post('/electricity-allocations/{allocation}/mark-paid', [\App\Http\Controllers\Api\ElectricityController::class, 'markAllocationPaid']);

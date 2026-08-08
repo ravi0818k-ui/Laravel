@@ -157,8 +157,27 @@
           <span class="error-msg" id="err-mobile">Enter a valid 10-digit mobile number</span>
         </div>
         <div class="form-group">
+          <label>Room No <span style="color:var(--light);font-weight:400;font-size:.75rem">(if assigned)</span></label>
+          <input type="text" name="room_number" id="f-room" placeholder="e.g. A1, 101, 203" />
+        </div>
+        <div class="form-group">
           <label>Date of Birth <span class="required">*</span></label>
-          <input type="date" name="candidate_dob" id="f-dob" />
+          <input type="hidden" name="candidate_dob" id="f-dob" />
+          <div style="display:flex;gap:8px;">
+            <select id="dob-year" onchange="updateDob()" style="flex:1.2">
+              <option value="">Year</option>
+            </select>
+            <select id="dob-month" onchange="updateDob()" style="flex:1">
+              <option value="">Month</option>
+              <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+              <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+              <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="dob-day" onchange="updateDob()" style="flex:0.8">
+              <option value="">Day</option>
+            </select>
+          </div>
           <span class="error-msg" id="err-dob">Please select your date of birth</span>
         </div>
         <div class="form-group">
@@ -170,13 +189,18 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Company / College Name <span class="required">*</span></label>
+          <label>Date of Onboarding <span class="required">*</span></label>
+          <input type="date" name="onboarding_date" id="f-onboarding-date" />
+          <span class="hint" style="display:block;margin-top:4px">Your move-in date or joining date</span>
+        </div>
+        <div class="form-group">
+          <label>Corporate / Company / College Name <span class="required">*</span></label>
           <input type="text" name="candidate_company_college" id="f-company" placeholder="Where you work or study" />
           <span class="error-msg" id="err-company">Please enter your company/college name</span>
         </div>
         <div class="form-group">
-          <label>Company / College Address</label>
-          <input type="text" name="candidate_company_college_address" id="f-companyAddr" placeholder="Office/campus address" />
+          <label>Corporate / Company / College Address</label>
+          <textarea name="candidate_company_college_address" id="f-companyAddr" rows="2" placeholder="Office/campus address"></textarea>
         </div>
         <div class="form-group">
           <label>Preferred PG Location <span class="required">*</span></label>
@@ -207,7 +231,7 @@
           <span class="error-msg" id="err-ref1">Enter a valid 10-digit number</span>
         </div>
         <div class="form-group">
-          <label>Reference Number 2 <span class="required">*</span></label>
+          <label>Reference Number 2 <span style="color:var(--light);font-weight:400;font-size:.75rem">(Optional)</span></label>
           <input type="tel" name="candidate_reference_mobile_2" id="f-ref2" placeholder="Another reference" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
           <span class="error-msg" id="err-ref2">Enter a valid 10-digit number</span>
         </div>
@@ -347,6 +371,43 @@
 const API_BASE = '/api/v1';
 let onboardingToken = '';
 
+// ─── DOB Dropdown Setup ─────────────────────────────────────
+(function initDobDropdowns() {
+  const yearSel = document.getElementById('dob-year');
+  const currentYear = new Date().getFullYear();
+  // Years from current-16 down to current-80 (typical PG tenant age range)
+  for (let y = currentYear - 16; y >= currentYear - 80; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    yearSel.appendChild(opt);
+  }
+  updateDobDays();
+})();
+
+function updateDob() {
+  updateDobDays();
+  const y = document.getElementById('dob-year').value;
+  const m = document.getElementById('dob-month').value;
+  const d = document.getElementById('dob-day').value;
+  document.getElementById('f-dob').value = (y && m && d) ? `${y}-${m}-${d.padStart(2,'0')}` : '';
+}
+
+function updateDobDays() {
+  const y = parseInt(document.getElementById('dob-year').value) || 2000;
+  const m = parseInt(document.getElementById('dob-month').value) || 1;
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const daySel = document.getElementById('dob-day');
+  const currentDay = daySel.value;
+  daySel.innerHTML = '<option value="">Day</option>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const opt = document.createElement('option');
+    opt.value = String(d).padStart(2, '0');
+    opt.textContent = d;
+    daySel.appendChild(opt);
+  }
+  if (currentDay && parseInt(currentDay) <= daysInMonth) daySel.value = currentDay;
+}
+
 // Extract token from URL
 const pathParts = window.location.pathname.split('/');
 onboardingToken = pathParts[pathParts.length - 1] || '';
@@ -440,7 +501,7 @@ function validateStep(step) {
 
     if (!/^\d{10}$/.test(parent)) { showErr('err-parent', true); valid = false; } else showErr('err-parent', false);
     if (!/^\d{10}$/.test(ref1)) { showErr('err-ref1', true); valid = false; } else showErr('err-ref1', false);
-    if (!/^\d{10}$/.test(ref2)) { showErr('err-ref2', true); valid = false; } else showErr('err-ref2', false);
+    if (ref2 && !/^\d{10}$/.test(ref2)) { showErr('err-ref2', true); valid = false; } else showErr('err-ref2', false);
     if (pwd.length < 8) { showErr('err-password', true); valid = false; } else showErr('err-password', false);
   }
   return valid;

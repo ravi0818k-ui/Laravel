@@ -13,7 +13,7 @@ class RoomController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $query = Room::with(['beds', 'pgLocation']);
+        $query = Room::with(['beds.currentAllocation.tenant.user', 'pgLocation']);
 
         if ($user->isAdmin()) {
             $assignedIds = $user->assignedPgLocations()->pluck('pg_locations.id');

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PG A1 – Tenant Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=DM+Sans:wght@300;400;500;600&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --cream:#faf6f0; --warm:#f2ebe0; --sand:#e8d8c4; --amber:#c8813a; --amber2:#e09a50; --dark:#1a1410; --charcoal:#3d3028; --mid:#7a6655; --light:#b8a898; --success:#2d6a4f; --danger:#c1121f; }
+    body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--charcoal); min-height:100vh; }
+    .container { max-width:520px; margin:0 auto; padding:20px 16px 40px; }
+    header { text-align:center; background:var(--dark); margin:-20px -16px 24px; padding:30px 16px; border-radius:0 0 24px 24px; }
+    .logo { margin-bottom:8px; }
+    .logo-pg { font-family:'Roboto',sans-serif; font-size:1.2rem; font-weight:700; color:white; }
+    .logo-one { font-family:'Roboto',sans-serif; font-size:1.8rem; font-weight:900; color:var(--amber); }
+    header h1 { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:white; margin-top:4px; }
+    header .subtitle { font-size:.8rem; color:var(--light); margin-top:4px; }
+    .form-group { margin-bottom:18px; }
+    .form-group label { display:block; font-size:.85rem; font-weight:600; color:var(--charcoal); margin-bottom:6px; }
+    .required { color:var(--danger); }
+    .optional { color:var(--light); font-weight:400; font-size:.75rem; }
+    input, select, textarea { width:100%; padding:12px 14px; border:1.5px solid var(--sand); border-radius:10px; font-size:.9rem; font-family:'DM Sans',sans-serif; background:var(--warm); outline:none; transition:border-color .2s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--amber); }
+    textarea { resize:vertical; }
+    .hint { font-size:.72rem; color:var(--light); margin-top:4px; display:block; }
+    .dob-wrapper { display:flex; gap:8px; }
+    .dob-wrapper select { flex:1; }
+    .upload-section { border:2px dashed var(--sand); border-radius:12px; padding:16px; text-align:center; background:white; }
+    .upload-options { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .btn-upload { padding:10px 16px; border:1.5px solid var(--amber); border-radius:8px; background:white; color:var(--amber); font-weight:600; font-size:.8rem; cursor:pointer; transition:all .2s; }
+    .btn-upload:hover { background:var(--amber); color:white; }
+    .btn-upload.btn-full { width:100%; }
+    .preview-container { margin-top:12px; position:relative; display:inline-block; }
+    .preview-container img { max-width:100%; max-height:200px; border-radius:8px; border:2px solid var(--sand); }
+    .preview-container .pdf-badge { background:var(--warm); padding:8px 14px; border-radius:8px; font-size:.8rem; font-weight:600; }
+    .btn-remove { position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--danger); color:white; border:none; font-size:.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .hidden { display:none !important; }
+    .btn-submit { width:100%; padding:14px; background:var(--amber); color:white; border:none; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; transition:all .2s; margin-top:8px; }
+    .btn-submit:hover { background:var(--amber2); }
+    .btn-submit:disabled { opacity:.6; cursor:not-allowed; }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px; }
+    .modal-content { background:white; border-radius:16px; padding:24px; max-width:380px; width:100%; text-align:center; }
+    .modal-content h3 { font-family:'Playfair Display',serif; margin-bottom:12px; }
+    .modal-content p { font-size:.85rem; color:var(--mid); margin-bottom:12px; }
+    .modal-content input { margin-bottom:12px; }
+    .modal-buttons { display:flex; gap:8px; justify-content:center; margin-top:12px; }
+    .btn-primary { padding:10px 20px; background:var(--amber); color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-cancel { padding:10px 20px; background:var(--warm); color:var(--mid); border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    .spinner { width:40px; height:40px; border:4px solid var(--sand); border-top-color:var(--amber); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loader-content { text-align:center; background:white; padding:32px; border-radius:16px; }
+    .success-icon, .error-icon { font-size:3rem; margin-bottom:12px; }
+    .btn-link { display:inline-block; padding:8px 16px; background:var(--warm); border-radius:8px; color:var(--amber); font-weight:600; text-decoration:none; font-size:.8rem; margin-bottom:12px; }
+    .password-hint { font-size:.8rem; background:var(--warm); padding:10px; border-radius:8px; }
+    .password-example { font-size:.8rem; margin-top:8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo"><span class="logo-pg">PG A</span><span class="logo-one">1</span></div>
+    <h1>Tenant Verification</h1>
+    <p class="subtitle">Document Upload & Registration (Existing Tenants)</p>
+  </header>
+
+  <form id="pgForm" novalidate autocomplete="off">
+    <!-- PG Selection -->
+    <div class="form-group">
+      <label>Select PG Location <span class="required">*</span></label>
+      <select id="pgSelect" required>
+        <option value="">-- Select PG --</option>
+      </select>
+      <span class="hint">Loading PG locations...</span>
+    </div>
+
+    <!-- Full Name -->
+    <div class="form-group">
+      <label>Full Name <span class="required">*</span></label>
+      <input type="text" id="fullName" placeholder="Enter your full name" required />
+    </div>
+
+    <!-- Room No -->
+    <div class="form-group">
+      <label>Room No <span class="required">*</span></label>
+      <input type="text" id="roomNo" placeholder="Enter your room number" required />
+    </div>
+
+    <!-- Mobile Number -->
+    <div class="form-group">
+      <label>Mobile Number <span class="required">*</span></label>
+      <input type="tel" id="mobile" placeholder="10-digit mobile number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required />
+    </div>
+
+    <!-- Date of Birth -->
+    <div class="form-group">
+      <label>Date of Birth <span class="required">*</span></label>
+      <div class="dob-wrapper">
+        <select id="dobYear" required><option value="">Year</option></select>
+        <select id="dobMonth" required>
+          <option value="">Month</option>
+          <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+          <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="dobDay" required><option value="">Day</option></select>
+      </div>
+    </div>
+
+    <!-- Corporate/Company/College Name -->
+    <div class="form-group">
+      <label>Corporate / Company / College Name <span class="required">*</span></label>
+      <input type="text" id="companyName" placeholder="Enter company/college name" required />
+    </div>
+
+    <!-- Corporate/Company/College Address -->
+    <div class="form-group">
+      <label>Corporate / Company / College Address</label>
+      <textarea id="companyAddress" rows="2" placeholder="Enter your corporate/company/college address"></textarea>
+    </div>
+
+    <!-- Father/Mother Mobile -->
+    <div class="form-group">
+      <label>Father's / Mother's Mobile Number <span class="required">*</span></label>
+      <input type="tel" id="parentMobile" placeholder="10-digit mobile number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required />
+    </div>
+
+    <!-- Reference Number 1 -->
+    <div class="form-group">
+      <label>Reference Number 1 <span class="required">*</span></label>
+      <input type="tel" id="reference1" placeholder="10-digit reference number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required />
+    </div>
+
+    <!-- Reference Number 2 -->
+    <div class="form-group">
+      <label>Reference Number 2 <span class="optional">(Optional)</span></label>
+      <input type="tel" id="reference2" placeholder="10-digit reference number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+    </div>
+
+    <!-- Blood Group -->
+    <div class="form-group">
+      <label>Blood Group <span class="optional">(Optional)</span></label>
+      <select id="bloodGroup">
+        <option value="">-- Select Blood Group --</option>
+        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+      </select>
+    </div>
+
+    <!-- Date of Onboarding -->
+    <div class="form-group">
+      <label>Date of Onboarding <span class="required">*</span></label>
+      <div class="dob-wrapper">
+        <select id="onbYear" required><option value="">Year</option></select>
+        <select id="onbMonth" required>
+          <option value="">Month</option>
+          <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+          <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="onbDay" required><option value="">Day</option></select>
+      </div>
+      <span class="hint">Your move-in / joining date</span>
+    </div>
+
+    <!-- Company/College ID Upload -->
+    <div class="form-group">
+      <label>Corporate / Company / College ID Card <span class="required">*</span></label>
+      <div class="upload-section">
+        <button type="button" onclick="document.getElementById('companyDocInput').click()" class="btn-upload btn-full">🏢 Upload Company/College ID</button>
+        <input type="file" id="companyDocInput" accept="image/*" hidden onchange="previewFile(this,'companyDocPreview','companyDocImg')" />
+        <div id="companyDocPreview" class="preview-container hidden">
+          <img id="companyDocImg" alt="Company ID" />
+          <button type="button" class="btn-remove" onclick="removePreview('companyDocInput','companyDocPreview')">✕</button>
+        </div>
+        <span class="hint">Image only. Max 8 MB</span>
+      </div>
+    </div>
+
+    <!-- Selfie Upload -->
+    <div class="form-group">
+      <label>Upload Selfie / Photo <span class="required">*</span></label>
+      <div class="upload-section">
+        <div class="upload-options">
+          <button type="button" onclick="document.getElementById('selfieCamera').click()" class="btn-upload">📷 Take Selfie</button>
+          <button type="button" onclick="document.getElementById('selfieGallery').click()" class="btn-upload">🖼️ Choose Gallery</button>
+        </div>
+        <input type="file" id="selfieCamera" accept="image/*" capture="user" hidden onchange="previewFile(this,'selfiePreview','selfieImg')" />
+        <input type="file" id="selfieGallery" accept="image/*" hidden onchange="previewFile(this,'selfiePreview','selfieImg')" />
+        <div id="selfiePreview" class="preview-container hidden">
+          <img id="selfieImg" alt="Selfie" />
+          <button type="button" class="btn-remove" onclick="removePreview('selfieCamera','selfiePreview');removePreview('selfieGallery','selfiePreview')">✕</button>
+        </div>
+        <span class="hint">Max 8 MB</span>
+      </div>
+    </div>
+
+    <!-- Aadhaar PDF Upload -->
+    <div class="form-group">
+      <label>Upload Aadhaar Card (PDF) <span class="required">*</span></label>
+      <div class="upload-section">
+        <button type="button" onclick="showAadhaarInfo()" class="btn-upload btn-full">📄 Upload Aadhaar PDF</button>
+        <input type="file" id="aadhaarPdfInput" accept="application/pdf" hidden onchange="handleAadhaarPdf(this)" />
+        <div id="aadhaarPdfPreview" class="preview-container hidden">
+          <div class="pdf-badge">📎 <span id="aadhaarPdfName"></span></div>
+          <button type="button" class="btn-remove" onclick="removeAadhaar()">✕</button>
+        </div>
+        <span class="hint">Download e-Aadhaar from <a href="https://myaadhaar.uidai.gov.in" target="_blank" style="color:var(--amber)">myaadhaar.uidai.gov.in</a></span>
+      </div>
+    </div>
+
+    <!-- Voter ID PDF Upload -->
+    <div class="form-group">
+      <label>Upload Voter ID Card (PDF) <span class="optional">(Optional)</span></label>
+      <div class="upload-section">
+        <button type="button" onclick="showVoterIdInfo()" class="btn-upload btn-full">📄 Upload Voter ID PDF</button>
+        <input type="file" id="voterPdfInput" accept="application/pdf" hidden onchange="handleVoterPdf(this)" />
+        <div id="voterPdfPreview" class="preview-container hidden">
+          <div class="pdf-badge">📎 <span id="voterPdfName"></span></div>
+          <button type="button" class="btn-remove" onclick="removeVoter()">✕</button>
+        </div>
+        <span class="hint">PDF only. Download e-EPIC from <a href="https://voters.eci.gov.in/login" target="_blank" style="color:var(--amber)">voters.eci.gov.in</a></span>
+      </div>
+    </div>
+
+    <!-- Set Password -->
+    <div class="form-group">
+      <label>Set Password <span class="required">*</span></label>
+      <input type="password" id="verifyPassword" placeholder="Min 8 characters (for your login)" autocomplete="new-password" required />
+      <span class="hint">This will be your login password for the tenant dashboard.</span>
+    </div>
+
+    <!-- Submit -->
+    <div class="form-group">
+      <button type="submit" id="submitBtn" class="btn-submit">Submit Verification</button>
+    </div>
+  </form>
+</div>
+
+<!-- Voter ID Info Modal -->
+<div id="voterIdInfoModal" class="overlay hidden">
+  <div class="modal-content">
+    <h3>📄 Voter ID Upload</h3>
+    <p>Download your e-EPIC (Digital Voter ID Card) from the official Election Commission website and upload it in <strong>PDF format only</strong>.</p>
+    <a href="https://voters.eci.gov.in/login" target="_blank" class="btn-link">🔗 Download from voters.eci.gov.in</a>
+    <p style="font-size:.75rem;color:var(--mid);margin-top:8px">Login → Download e-EPIC → Upload the PDF here</p>
+    <div class="modal-buttons">
+      <button onclick="closeVoterIdInfo();document.getElementById('voterPdfInput').click()" class="btn-primary">Upload PDF</button>
+      <button onclick="closeVoterIdInfo()" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="overlay hidden">
+  <div class="loader-content">
+    <div class="spinner"></div>
+    <p>Uploading documents...</p>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="overlay hidden">
+  <div class="modal-content">
+    <div class="success-icon">✅</div>
+    <h3>Submitted Successfully!</h3>
+    <p>Your verification documents have been uploaded. Our team will review them shortly.</p>
+    <button onclick="window.location.href='/dashboard/login.html'" class="btn-primary">Go to Dashboard →</button>
+  </div>
+</div>
+
+<!-- Aadhaar Info Modal -->
+<div id="aadhaarInfoModal" class="overlay hidden">
+  <div class="modal-content">
+    <h3>📄 Aadhaar Upload</h3>
+    <p>Download your e-Aadhaar from the official UIDAI website and upload the PDF.</p>
+    <a href="https://myaadhaar.uidai.gov.in/genricDownloadAadhaar/en" target="_blank" class="btn-link">🔗 Download from UIDAI</a>
+    <div class="modal-buttons">
+      <button onclick="closeAadhaarInfo();document.getElementById('aadhaarPdfInput').click()" class="btn-primary">Upload PDF</button>
+      <button onclick="closeAadhaarInfo()" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Password Modal -->
+<div id="pdfPasswordModal" class="overlay hidden">
+  <div class="modal-content">
+    <h3>🔒 PDF is Password Protected</h3>
+    <p class="password-hint"><strong>Password:</strong> First 4 letters of name (CAPS) + Year of Birth</p>
+    <p class="password-example">Example: SURE1990</p>
+    <input type="text" id="pdfPassword" placeholder="Enter PDF password" />
+    <div class="modal-buttons">
+      <button onclick="unlockPdf()" class="btn-primary">Unlock</button>
+      <button onclick="closePdfPassword()" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// DOB dropdowns
+(function() {
+  const yearSel = document.getElementById('dobYear');
+  const now = new Date().getFullYear();
+  for (let y = now - 16; y >= now - 80; y--) { const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o); }
+  document.getElementById('dobMonth').onchange = updateDays;
+  document.getElementById('dobYear').onchange = updateDays;
+  function updateDays() {
+    const y = parseInt(document.getElementById('dobYear').value) || 2000;
+    const m = parseInt(document.getElementById('dobMonth').value) || 1;
+    const days = new Date(y, m, 0).getDate();
+    const daySel = document.getElementById('dobDay');
+    const cur = daySel.value;
+    daySel.innerHTML = '<option value="">Day</option>';
+    for (let d = 1; d <= days; d++) { const o = document.createElement('option'); o.value = String(d).padStart(2,'0'); o.textContent = d; daySel.appendChild(o); }
+    if (cur && parseInt(cur) <= days) daySel.value = cur;
+  }
+})();
+
+// Onboarding Date dropdowns
+(function() {
+  const yearSel = document.getElementById('onbYear');
+  const now = new Date().getFullYear();
+  // Onboarding years: current year and 2 years back
+  for (let y = now; y >= now - 2; y--) { const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o); }
+  document.getElementById('onbMonth').onchange = updateOnbDays;
+  document.getElementById('onbYear').onchange = updateOnbDays;
+  function updateOnbDays() {
+    const y = parseInt(document.getElementById('onbYear').value) || now;
+    const m = parseInt(document.getElementById('onbMonth').value) || 1;
+    const days = new Date(y, m, 0).getDate();
+    const daySel = document.getElementById('onbDay');
+    const cur = daySel.value;
+    daySel.innerHTML = '<option value="">Day</option>';
+    for (let d = 1; d <= days; d++) { const o = document.createElement('option'); o.value = String(d).padStart(2,'0'); o.textContent = d; daySel.appendChild(o); }
+    if (cur && parseInt(cur) <= days) daySel.value = cur;
+  }
+})();
+
+// File preview helpers
+function previewFile(input, previewId, imgId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => { document.getElementById(imgId).src = e.target.result; document.getElementById(previewId).classList.remove('hidden'); };
+  reader.readAsDataURL(file);
+}
+function removePreview(inputId, previewId) {
+  document.getElementById(inputId).value = '';
+  document.getElementById(previewId).classList.add('hidden');
+}
+
+// Aadhaar PDF handling
+let aadhaarBlobs = [];
+let pendingAadhaarFile = null;
+
+function showAadhaarInfo() { document.getElementById('aadhaarInfoModal').classList.remove('hidden'); }
+function closeAadhaarInfo() { document.getElementById('aadhaarInfoModal').classList.add('hidden'); }
+
+async function handleAadhaarPdf(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    await renderAadhaarPages(pdf, file.name);
+  } catch(err) {
+    if (err.name === 'PasswordException' || err.message?.includes('password')) {
+      pendingAadhaarFile = file;
+      document.getElementById('pdfPasswordModal').classList.remove('hidden');
+    } else { alert('Cannot read PDF. Try a different file.'); input.value = ''; }
+  }
+}
+
+async function unlockPdf() {
+  const pwd = document.getElementById('pdfPassword').value.trim();
+  if (!pwd) return;
+  try {
+    const buf = await pendingAadhaarFile.arrayBuffer();
+    const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+    const pdf = await pdfjsLib.getDocument({ data: buf, password: pwd }).promise;
+    closePdfPassword();
+    await renderAadhaarPages(pdf, pendingAadhaarFile.name);
+  } catch(e) { alert('Incorrect password. Try again.'); }
+}
+function closePdfPassword() { document.getElementById('pdfPasswordModal').classList.add('hidden'); }
+
+async function renderAadhaarPages(pdf, name) {
+  aadhaarBlobs = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    aadhaarBlobs.push(new File([blob], name.replace('.pdf','') + `_p${i}.jpg`, { type:'image/jpeg' }));
+  }
+  document.getElementById('aadhaarPdfName').textContent = name + ` (${pdf.numPages} page${pdf.numPages>1?'s':''})`;
+  document.getElementById('aadhaarPdfPreview').classList.remove('hidden');
+}
+function removeAadhaar() { aadhaarBlobs = []; document.getElementById('aadhaarPdfInput').value = ''; document.getElementById('aadhaarPdfPreview').classList.add('hidden'); }
+
+// Voter PDF
+function showVoterIdInfo() { document.getElementById('voterIdInfoModal').classList.remove('hidden'); }
+function closeVoterIdInfo() { document.getElementById('voterIdInfoModal').classList.add('hidden'); }
+function handleVoterPdf(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { alert('Please upload Voter ID in PDF format only.'); input.value = ''; return; }
+  document.getElementById('voterPdfName').textContent = file.name;
+  document.getElementById('voterPdfPreview').classList.remove('hidden');
+}
+function removeVoter() { document.getElementById('voterPdfInput').value = ''; document.getElementById('voterPdfPreview').classList.add('hidden'); }
+
+// Form submission
+document.getElementById('pgForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pgId = document.getElementById('pgSelect').value;
+  const name = document.getElementById('fullName').value.trim();
+  const room = document.getElementById('roomNo').value.trim();
+  const mobile = document.getElementById('mobile').value.trim();
+  const y = document.getElementById('dobYear').value;
+  const m = document.getElementById('dobMonth').value;
+  const d = document.getElementById('dobDay').value;
+  const company = document.getElementById('companyName').value.trim();
+  const parent = document.getElementById('parentMobile').value.trim();
+  const ref1 = document.getElementById('reference1').value.trim();
+  const onbDate = (document.getElementById('onbYear').value && document.getElementById('onbMonth').value && document.getElementById('onbDay').value) ? `${document.getElementById('onbYear').value}-${document.getElementById('onbMonth').value}-${document.getElementById('onbDay').value}` : '';
+  const pwd = document.getElementById('verifyPassword').value;
+  const selfie = document.getElementById('selfieCamera').files[0] || document.getElementById('selfieGallery').files[0];
+
+  // Validation
+  if (!pgId) { alert('Please select a PG location.'); return; }
+  if (!name || !room || !/^\d{10}$/.test(mobile) || !y || !m || !d || !company || !/^\d{10}$/.test(parent) || !/^\d{10}$/.test(ref1) || !onbDate) {
+    alert('Please fill all required fields correctly.'); return;
+  }
+  if (!pwd || pwd.length < 8) { alert('Password must be at least 8 characters.'); return; }
+  if (!selfie) { alert('Please upload a selfie.'); return; }
+  if (aadhaarBlobs.length === 0) { alert('Please upload Aadhaar PDF.'); return; }
+  if (!document.getElementById('companyDocInput').files[0]) { alert('Please upload Company/College ID card.'); return; }
+
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  document.getElementById('submitBtn').disabled = true;
+
+  // Build form data
+  const token = window.location.pathname.split('/').pop();
+  const fd = new FormData();
+  fd.append('candidate_name', name);
+  fd.append('candidate_mobile', mobile);
+  fd.append('candidate_dob', `${y}-${m}-${d}`);
+  fd.append('candidate_blood_group', document.getElementById('bloodGroup').value);
+  fd.append('candidate_company_college', company);
+  fd.append('candidate_company_college_address', document.getElementById('companyAddress').value.trim());
+  fd.append('candidate_parent_mobile', parent);
+  fd.append('candidate_reference_mobile_1', ref1);
+  fd.append('candidate_reference_mobile_2', document.getElementById('reference2').value.trim() || parent);
+  fd.append('preferred_pg_location_id', pgId);
+  fd.append('password', pwd);
+  // Store room number in referral_code_used field (reusing for existing tenant room info)
+  fd.append('referral_code_used', 'ROOM:' + room);
+
+  // Compress and append images
+  async function compress(file) {
+    if (!file || file.size < 900*1024) return file;
+    const img = new Image(); const url = URL.createObjectURL(file);
+    await new Promise(r => { img.onload = r; img.src = url; }); URL.revokeObjectURL(url);
+    let w = img.width, h = img.height; const max = 1600;
+    if (w > max || h > max) { const ratio = Math.min(max/w, max/h); w *= ratio; h *= ratio; }
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.7));
+    return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+  }
+
+  fd.append('selfie', await compress(selfie));
+  fd.append('aadhaar', await compress(aadhaarBlobs[0]));
+  for (let i = 1; i < aadhaarBlobs.length; i++) fd.append('aadhaar_pages[]', await compress(aadhaarBlobs[i]));
+
+  const voterFile = document.getElementById('voterPdfInput').files[0];
+  if (voterFile) fd.append('voter_id_front', voterFile);
+
+  const companyDoc = document.getElementById('companyDocInput').files[0];
+  if (companyDoc) fd.append('company_college_id', await compress(companyDoc));
+
+  try {
+    const resp = await fetch(`/api/v1/onboarding/${token}/submit`, { method:'POST', headers:{'Accept':'application/json'}, body: fd });
+    const data = await resp.json();
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    if (!resp.ok) { document.getElementById('submitBtn').disabled = false; alert(data.message || 'Submission failed.'); return; }
+    document.getElementById('successModal').classList.remove('hidden');
+  } catch(err) {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('submitBtn').disabled = false;
+    alert('Network error. Please try again.');
+  }
+});
+
+// Load PG locations
+(async function loadPgLocations() {
+  try {
+    const resp = await fetch('/api/v1/public/pg-locations', { headers: { 'Accept': 'application/json' } });
+    const data = await resp.json();
+    const sel = document.getElementById('pgSelect');
+    const pgs = data.pg_locations || [];
+    sel.innerHTML = '<option value="">-- Select PG --</option>' + pgs.map(pg => `<option value="${pg.id}">${pg.name}</option>`).join('');
+    sel.nextElementSibling.textContent = '';
+  } catch(e) {
+    document.getElementById('pgSelect').nextElementSibling.textContent = 'Failed to load PG locations';
+  }
+})();
+</script>
+</body>
+</html>

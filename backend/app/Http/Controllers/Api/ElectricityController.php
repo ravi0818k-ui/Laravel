@@ -88,6 +88,56 @@ class ElectricityController extends Controller
     }
 
     /**
+     * Admin: update an existing electricity bill (edit readings/rate, recalculate split).
+     */
+    public function update(Request $request, ElectricityBill $bill): JsonResponse
+    {
+        $request->validate([
+            'total_units' => 'required|numeric|min:0.1',
+            'rate_per_unit' => 'required|numeric|min:0.1',
+            'previous_reading' => 'nullable|numeric|min:0',
+            'current_reading' => 'nullable|numeric|min:0',
+            'previous_meter_image' => 'nullable|image|max:5120',
+            'current_meter_image' => 'nullable|image|max:5120',
+        ]);
+
+        $totalAmount = $request->total_units * $request->rate_per_unit;
+        $activeTenantCount = $bill->active_tenants_count ?: 1;
+        $perTenantAmount = round($totalAmount / $activeTenantCount, 2);
+
+        // Update meter images if provided
+        if ($request->hasFile('previous_meter_image')) {
+            if ($bill->previous_meter_image) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($bill->previous_meter_image);
+            }
+            $bill->previous_meter_image = $request->file('previous_meter_image')->store("electricity/room_{$bill->room_id}", 'local');
+        }
+        if ($request->hasFile('current_meter_image')) {
+            if ($bill->current_meter_image) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($bill->current_meter_image);
+            }
+            $bill->current_meter_image = $request->file('current_meter_image')->store("electricity/room_{$bill->room_id}", 'local');
+        }
+
+        $bill->update([
+            'total_units' => $request->total_units,
+            'rate_per_unit' => $request->rate_per_unit,
+            'total_amount' => $totalAmount,
+            'per_tenant_amount' => $perTenantAmount,
+            'previous_reading' => $request->previous_reading,
+            'current_reading' => $request->current_reading,
+        ]);
+
+        // Update all allocations with new per-tenant amount
+        $bill->allocations()->update(['amount' => $perTenantAmount]);
+
+        return response()->json([
+            'message' => "Bill updated. ₹{$totalAmount} split as ₹{$perTenantAmount} per tenant.",
+            'bill' => $bill->fresh()->load('allocations.tenant'),
+        ]);
+    }
+
+    /**
      * Admin: list electricity bills.
      */
     public function index(Request $request): JsonResponse
@@ -124,6 +174,17 @@ class ElectricityController extends Controller
         return response($file, 200)
             ->header('Content-Type', $mimeType)
             ->header('Cache-Control', 'private, max-age=3600');
+    }
+
+    /**
+     * Admin: delete an electricity bill and its allocations.
+     */
+    public function destroy(ElectricityBill $bill): JsonResponse
+    {
+        $bill->allocations()->delete();
+        $bill->delete();
+
+        return response()->json(['message' => 'Electricity bill deleted.']);
     }
 
     /**

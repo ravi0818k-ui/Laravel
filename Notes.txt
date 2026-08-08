@@ -1,0 +1,63 @@
+
+control /name Microsoft.CredentialManager
+
+
+url: http://127.0.0.1:8000/dashboard/super-admin.html
+Mobile: 9999999999
+Password: SuperAdmin@123
+
+Ravi: 
+Kumar | mobile: 9999999991 | PGs: 0
+  Abhishek | mobile: 9151726759 | PGs: 0
+  Ravi | mobile: 9151726758 | PGs: 4
+  Abhishek | mobile: 9151726750 | PGs: 1
+  
+  Passwords are stored as bcrypt hashes in the database (one-way encryption, not reversible). The API never
+
+9807087080
+
+kumarn otion
+8967987098
+
+8210731080
+
+
+RRBPR03597
+Year@2026
+
+
+Ramesh
+9151726759
+
+Prakhar: 
+9678678767
+
+
+8756756754
+
+Abhishek Ranjan 2
+9967867867
+
+7717741190
+
+7717741191
+
+7717741192
+
+New User
+9077567567
+
+onboarding 3
+9100000003
+India@123
+
+Suresh Kumar
+9100000004
+
+Login: http://127.0.0.1:8000/dashboard/login.html
+Super Admin: login with 9999999999 / admin123
+Admin Panel: http://127.0.0.1:8000/dashboard/admin.html
+Tenant: http://127.0.0.1:8000/dashboard/tenant.html
+
+
+8 Aug 2026-Onboarding

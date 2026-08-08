@@ -232,7 +232,16 @@ async function renderHome() {
           </div>` : ''}
         </div>
       </div>`;
-      })() : '<p class="text-mid text-sm mb-5">No rent generated yet.</p>'}
+      })() : (() => {
+        // Hide "no rent" message if tenant is new (within 2 months) — first payment card will show below
+        if (t?.joining_date) {
+          const jd = new Date(t.joining_date);
+          const twoMonthsAgo = new Date();
+          twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+          if (jd >= twoMonthsAgo) return '';
+        }
+        return '<p class="text-mid text-sm mb-5">No rent generated yet.</p>';
+      })()}
 
       <!-- Info Cards -->
       <div class="grid grid-cols-2 gap-3 mb-5">

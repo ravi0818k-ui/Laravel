@@ -194,8 +194,11 @@ const api = {
     return this.post('/admin/onboarding/invite', { pg_location_id: pgLocationId });
   },
 
-  async listApplications(status = '') {
-    return this.get(`/admin/onboarding/applications${status ? '?status=' + status : ''}`);
+  async listApplications(params = '') {
+    if (typeof params === 'string' && params && !params.includes('=')) {
+      params = 'status=' + params;
+    }
+    return this.get(`/admin/onboarding/applications${params ? '?' + params : ''}`);
   },
 
   async getApplicationDocuments(invitationId) {
@@ -217,6 +220,10 @@ const api = {
 
   async generateRent(billingMonth) {
     return this.post('/admin/rents/generate', { billing_month: billingMonth });
+  },
+
+  async generateIndividualRent(tenantId, billingMonth) {
+    return this.post('/admin/rents/generate-individual', { tenant_id: tenantId, billing_month: billingMonth });
   },
 
   // ─── Notes ────────────────────────────────────────────────────

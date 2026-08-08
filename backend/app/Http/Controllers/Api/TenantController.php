@@ -91,4 +91,20 @@ class TenantController extends Controller
 
         return response()->json(['allocations' => $allocations]);
     }
+
+    /**
+     * Tenant: change own password.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'new_password' => 'required|string|min:6',
+        ]);
+
+        $request->user()->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+        ]);
+
+        return response()->json(['message' => 'Password updated successfully.']);
+    }
 }

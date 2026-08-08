@@ -193,7 +193,7 @@ async function renderAdminDashboard() {
   // Fetch onboarding count (submitted applications awaiting approval)
   try {
     const onbData = await api.listApplications('submitted');
-    const submittedCount = (onbData.applications || []).length;
+    const submittedCount = (onbData.applications || []).filter(a => a.candidate_name).length;
     const onbBadge = document.getElementById('onboarding-badge');
     if (submittedCount > 0) { onbBadge.textContent = submittedCount; onbBadge.classList.remove('hidden'); } else { onbBadge.classList.add('hidden'); }
   } catch(e) {}
@@ -202,7 +202,19 @@ async function renderAdminDashboard() {
   const totalBeds = rooms.reduce((sum, r) => sum + (r.beds?.length || 0), 0);
   const occupiedBeds = rooms.reduce((sum, r) => sum + (r.beds?.filter(b => b.status === 'occupied').length || 0), 0);
 
+    // Check if rent is generated for current month
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const activeTenantsCount = tenants.filter(t => t.status === 'active').length;
+    const tenantsWithRent = tenants.filter(t => t.latest_rent && t.latest_rent.billing_month && t.latest_rent.billing_month.startsWith(currentMonth)).length;
+    const rentNotGenerated = activeTenantsCount > 0 && tenantsWithRent === 0;
+
   document.getElementById('main').innerHTML = `
+    ${rentNotGenerated ? `
+    <div class="bg-[#fde8e8] border border-[#c1121f]/20 rounded-xl p-3 mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-danger">warning</span>
+      <p class="text-xs text-danger font-semibold">Monthly rent not generated for ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}.</p>
+      <button onclick="showGenerateRentModal()" class="ml-auto text-[10px] font-bold bg-danger text-white px-3 py-1 rounded-lg hover:opacity-90">Generate Now</button>
+    </div>` : ''}
     <div class="mb-6">
       <h2 class="font-display text-2xl font-black text-dark">${currentPg?.name || 'Admin Dashboard'}</h2>
       <p class="text-sm text-mid mt-1">${tenants.length} tenants • ${totalBeds} beds • ${pendingCount} pending payments</p>
@@ -335,9 +347,11 @@ function renderTenantRow(t) {
         <div class="flex gap-1.5 items-center">
           <button onclick="viewTenantDetail(${t.id})" class="text-[10px] font-bold bg-warm text-charcoal px-2 py-1 rounded hover:bg-sand" title="View Details">👁</button>
           <button onclick="showChangeRentModal(${t.id}, '${safeName}', ${t.current_rent})" class="text-[10px] font-bold text-amber hover:underline" title="Change Rent">₹</button>
+          <button onclick="generateIndividualRent(${t.id}, '${safeName}')" class="text-[10px] font-bold text-amber hover:underline" title="Generate Rent"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">receipt_long</span></button>
           <button onclick="showElecAdjustModal(${t.id}, '${safeName}', '${t.tenant_id}')" class="text-[10px] font-bold text-amber hover:underline" title="Electricity">⚡</button>
-          <button onclick="showChangeRoomModal(${t.id}, '${safeName}')" class="text-[10px] font-bold text-amber hover:underline" title="Change Room">🏠</button>
-          <button onclick="softDeleteTenant(${t.id}, '${safeName}')" class="text-[10px] font-bold text-danger hover:underline" title="Delete">🗑</button>
+          <button onclick="showChangeRoomModal(${t.id}, '${safeName}')" class="text-[10px] font-bold text-amber hover:underline" title="Change Room"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">swap_horiz</span></button>
+          ${t.status === 'active' ? `<button onclick="offboardTenant(${t.id}, '${safeName}')" class="text-[10px] font-bold text-mid hover:underline" title="Offboard"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">logout</span></button>` : ''}
+          <button onclick="softDeleteTenant(${t.id}, '${safeName}')" class="text-[10px] font-bold text-danger hover:underline" title="Delete"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">delete</span></button>
         </div>
       </td>
     </tr>`;
@@ -519,52 +533,140 @@ async function impersonateTenant(tenantId) {
   } catch(err) { showToast(err.data?.message || 'Failed to impersonate', 'error'); }
 }
 
+let roomsView = 'list'; // 'list' or 'grid'
+
 async function renderRooms() {
   try {
     const data = await api.adminRooms(currentPgId || '');
     const rooms = data.rooms || [];
     document.getElementById('main').innerHTML = `
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
         <h2 class="font-display text-2xl font-black text-dark">Rooms & Beds</h2>
-        <button onclick="addRoom()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover transition-all flex items-center gap-1">
-          <span class="material-symbols-outlined text-sm">add</span>Add Room
-        </button>
+        <div class="flex items-center gap-2">
+          <div class="flex rounded-lg border border-sand overflow-hidden">
+            <button onclick="roomsView='list';renderRooms()" class="px-3 py-1.5 text-xs font-bold flex items-center gap-1 ${roomsView==='list' ? 'bg-amber text-white' : 'bg-white text-mid hover:bg-warm'}">
+              <span class="material-symbols-outlined text-sm">view_list</span>List
+            </button>
+            <button onclick="roomsView='grid';renderRooms()" class="px-3 py-1.5 text-xs font-bold flex items-center gap-1 ${roomsView==='grid' ? 'bg-amber text-white' : 'bg-white text-mid hover:bg-warm'}">
+              <span class="material-symbols-outlined text-sm">grid_view</span>Grid
+            </button>
+          </div>
+          <button onclick="addRoom()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">add</span>Add Room
+          </button>
+        </div>
       </div>
-      ${rooms.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid mb-4">No rooms yet. Click "Add Room" above to create your first room, then add beds to it.</p><button onclick="addRoom()" class="bg-amber text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-amber-hover">+ Add Your First Room</button></div>' : `
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        ${rooms.map(r => `
-          <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
-            <div class="flex justify-between items-start">
-              <div>
-                <h5 class="font-bold text-dark">Room ${r.room_number}</h5>
-                <p class="text-xs text-mid">Floor ${r.floor} • ${r.room_type} • ${r.pg_location?.name || ''}</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button onclick="addBed(${r.id})" class="text-[10px] font-bold text-amber hover:underline">+ Bed</button>
-                <button onclick="deleteRoom(${r.id}, '${r.room_number}', ${(r.beds||[]).filter(b=>b.status==='occupied').length})" class="text-[10px] font-bold text-danger hover:underline" title="Delete room">🗑</button>
-              </div>
-            </div>
-            <div class="flex gap-2 mt-3 flex-wrap">
-              ${(r.beds || []).map(b => `
-                <div class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${b.status==='available' ? 'bg-success-bg text-success' : b.status==='occupied' ? 'bg-warm text-charcoal' : 'bg-danger-bg text-danger'}">
-                  <span class="w-2 h-2 rounded-full ${b.status==='available' ? 'bg-success' : b.status==='occupied' ? 'bg-charcoal' : 'bg-danger'}"></span>
-                  Bed ${b.bed_number} • ₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}
-                  ${b.status !== 'occupied' ? `<button onclick="event.stopPropagation();deleteBed(${b.id},'${b.bed_number}')" class="ml-1 text-danger hover:text-white hover:bg-danger rounded px-1" title="Delete bed">×</button>` : ''}
-                </div>
-              `).join('')}
-              ${(r.beds || []).length === 0 ? '<span class="text-xs text-light">No beds added yet</span>' : ''}
-            </div>
-          </div>`).join('')}
-      </div>
-      <div class="flex items-center gap-4 mt-4 text-xs text-mid">
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-success inline-block"></span> Available</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-charcoal inline-block"></span> Occupied</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-danger inline-block"></span> Maintenance</span>
-      </div>`}
+      ${rooms.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid mb-4">No rooms yet.</p><button onclick="addRoom()" class="bg-amber text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-amber-hover">+ Add Your First Room</button></div>' :
+      roomsView === 'grid' ? renderRoomsGrid(rooms) : renderRoomsList(rooms)}
     `;
   } catch(err) {
     document.getElementById('main').innerHTML = `<p class="text-danger text-center py-8">Failed to load rooms: ${err.data?.message || 'Error'}</p>`;
   }
+}
+
+function renderRoomsList(rooms) {
+  return `
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${rooms.map(r => `
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
+          <div class="flex justify-between items-start">
+            <div>
+              <h5 class="font-bold text-dark">Room ${r.room_number}</h5>
+              <p class="text-xs text-mid">Floor ${r.floor} • ${r.room_type} • ${r.pg_location?.name || ''}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="addBed(${r.id})" class="text-[10px] font-bold text-amber hover:underline">+ Bed</button>
+              <button onclick="deleteRoom(${r.id}, '${r.room_number}', ${(r.beds||[]).filter(b=>b.status==='occupied').length})" class="text-[10px] font-bold text-danger hover:underline" title="Delete room">🗑</button>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 flex-wrap">
+            ${(r.beds || []).map(b => `
+              <div class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${b.status==='available' ? 'bg-success-bg text-success' : b.status==='occupied' ? 'bg-warm text-charcoal' : 'bg-danger-bg text-danger'}">
+                <span class="w-2 h-2 rounded-full ${b.status==='available' ? 'bg-success' : b.status==='occupied' ? 'bg-charcoal' : 'bg-danger'}"></span>
+                Bed ${b.bed_number} • ₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}
+                ${b.status !== 'occupied' ? `<button onclick="event.stopPropagation();deleteBed(${b.id},'${b.bed_number}')" class="ml-1 text-danger hover:text-white hover:bg-danger rounded px-1" title="Delete bed">×</button>` : ''}
+              </div>
+            `).join('')}
+            ${(r.beds || []).length === 0 ? '<span class="text-xs text-light">No beds added yet</span>' : ''}
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="flex items-center gap-4 mt-4 text-xs text-mid">
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-success inline-block"></span> Available</span>
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-charcoal inline-block"></span> Occupied</span>
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-danger inline-block"></span> Maintenance</span>
+    </div>`;
+}
+
+function renderRoomsGrid(rooms) {
+  return `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      ${rooms.map(r => {
+        const beds = r.beds || [];
+        return `
+        <div class="bg-white rounded-2xl border border-sand shadow-card overflow-hidden">
+          <!-- Room Header -->
+          <div class="bg-warm px-5 py-3 flex justify-between items-center border-b border-sand">
+            <div>
+              <h4 class="font-display text-lg font-bold text-dark">Room ${r.room_number}</h4>
+              <p class="text-[10px] text-mid">${beds.length} Bed${beds.length !== 1 ? 's' : ''} • Floor ${r.floor} • ${r.room_type}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="addBed(${r.id})" class="text-amber hover:bg-amber hover:text-white rounded-full p-1 transition-colors border border-amber" title="Add Bed">
+                <span class="material-symbols-outlined text-sm">add</span>
+              </button>
+              <span class="material-symbols-outlined text-2xl text-amber">bed</span>
+              <button onclick="deleteRoom(${r.id}, '${r.room_number}', ${beds.filter(b=>b.status==='occupied').length})" class="text-danger hover:bg-danger hover:text-white rounded-full p-1 transition-colors" title="Delete Room">
+                <span class="material-symbols-outlined text-sm">delete</span>
+              </button>
+            </div>
+          </div>
+          <!-- Beds Grid -->
+          <div class="p-4">
+            <div class="grid grid-cols-2 gap-3">
+              ${beds.map(b => {
+                const isOccupied = b.status === 'occupied';
+                const isAvailable = b.status === 'available';
+                const tenant = b.current_allocation?.tenant;
+                const borderColor = isOccupied ? 'border-[#d1d5db]' : isAvailable ? 'border-success' : 'border-danger';
+                const bgColor = isOccupied ? 'bg-[#f9fafb]' : isAvailable ? 'bg-success-bg' : 'bg-danger-bg';
+                return `
+              <div class="rounded-xl border-2 ${borderColor} ${bgColor} p-3 relative">
+                <!-- Bed Visual -->
+                <div class="flex items-start justify-between mb-2">
+                  <div class="w-12 h-16 rounded-lg ${isOccupied ? 'bg-[#e5e7eb] border-2 border-[#d1d5db]' : isAvailable ? 'bg-success/10 border-2 border-success/30' : 'bg-danger/10 border-2 border-danger/30'} flex items-end justify-center pb-1">
+                    <span class="material-symbols-outlined text-lg ${isOccupied ? 'text-[#6b7280]' : isAvailable ? 'text-success' : 'text-danger'}">bed</span>
+                  </div>
+                  ${isOccupied && tenant ? `
+                  <div class="w-8 h-8 rounded-full bg-[#6b7280] flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-sm">person</span>
+                  </div>` : ''}
+                </div>
+                <!-- Info -->
+                <p class="text-[10px] font-bold uppercase tracking-wider ${isOccupied ? 'text-[#6b7280]' : isAvailable ? 'text-success' : 'text-danger'}">${b.status}</p>
+                ${isOccupied && tenant ? `
+                <p class="text-xs font-bold text-dark mt-0.5">${tenant.user?.name || tenant.tenant_id || '—'}</p>` : ''}
+                <p class="text-xs text-mid mt-0.5">₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo</p>
+                <!-- Bed Label -->
+                <div class="absolute bottom-0 left-0 right-0 ${isOccupied ? 'bg-[#6b7280]' : isAvailable ? 'bg-success' : 'bg-danger'} text-white text-center py-1 rounded-b-lg">
+                  <span class="text-[10px] font-bold">Bed ${b.bed_number}</span>
+                </div>
+                <!-- Delete button for non-occupied -->
+                ${!isOccupied ? `<button onclick="event.stopPropagation();deleteBed(${b.id},'${b.bed_number}')" class="absolute top-2 right-2 text-danger bg-white rounded-full w-5 h-5 flex items-center justify-center shadow hover:bg-danger hover:text-white" title="Delete">×</button>` : ''}
+              </div>`;
+              }).join('')}
+              <!-- No add bed card here, button is in header -->
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <!-- Legend -->
+    <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-mid">
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#6b7280] inline-block"></span> Occupied</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-success inline-block"></span> Available</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-danger inline-block"></span> Maintenance</span>
+    </div>`;
 }
 
 async function renderPayments() {
@@ -583,7 +685,7 @@ async function renderPayments() {
               <div>
                 <p class="text-sm font-bold text-dark">${p.tenant?.user?.name || 'Tenant'} <span class="font-mono text-amber text-xs">${p.tenant?.tenant_id || ''}</span></p>
                 <p class="text-xs text-mid mt-0.5">${billingMonth ? billingMonth + ' • ' : ''}₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p>
-                <p class="text-[10px] text-light mt-0.5">Submitted: ${fmtDate(p.payment_date || p.created_at)}</p>
+                <p class="text-[10px] text-light mt-0.5">Submitted: ${fmtDate(p.payment_date || p.created_at)}${p.transaction_reference ? ` • <span class="font-bold text-info">${p.transaction_reference === 'first_both' ? '1st: Rent+Security' : p.transaction_reference === 'first_rent' ? '1st: Rent Only' : p.transaction_reference === 'first_security' ? '1st: Security Only' : p.transaction_reference}</span>` : !p.monthly_rent_id ? ' • <span class="font-bold text-info">First Payment</span>' : ''}</p>
               </div>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warm text-amber">Pending</span>
             </div>
@@ -656,81 +758,53 @@ async function viewPaymentScreenshot(paymentId, tenantName, month) {
   document.body.appendChild(overlay);
 }
 
+let onbPage = 1;
+let onbSearch = '';
+let onbMonth = '';
+let onbStatus = '';
+let onbDebounceTimer = null;
+
 async function renderOnboarding() {
-  const data = await api.listApplications();
+  const main = document.getElementById('main');
+  const params = new URLSearchParams();
+  if (onbStatus) params.append('status', onbStatus);
+  if (onbSearch) params.append('search', onbSearch);
+  if (onbMonth) params.append('month', onbMonth);
+  params.append('page', onbPage);
+  params.append('per_page', 10);
+
+  const data = await api.listApplications(params.toString());
   const allApps = data.applications || [];
-  
-  // Separate actual submissions from pending links
+  const pagination = data.pagination || { total: 0, current_page: 1, last_page: 1 };
   const apps = allApps.filter(a => a.candidate_name);
   const pendingLinks = allApps.filter(a => !a.candidate_name && a.status === 'pending');
 
-  document.getElementById('main').innerHTML = `
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="font-display text-2xl font-black text-dark">Onboarding</h2>
-      <button onclick="generateOnboarding()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm">link</span>New Link
-      </button>
+  main.innerHTML = `
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+      <div><h2 class="font-display text-2xl font-black text-dark">Onboarding</h2><p class="text-xs text-mid">${pagination.total} total applications</p></div>
+      <button onclick="generateOnboarding()" class="bg-amber text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-hover flex items-center gap-1"><span class="material-symbols-outlined text-sm">link</span>New Link</button>
     </div>
-    ${apps.length === 0 && pendingLinks.length === 0 ? '<p class="text-mid text-center py-8">No applications yet. Generate a link and share with the candidate.</p>' : `
+    <div class="flex flex-wrap gap-2 mb-4">
+      <div class="relative"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-light text-sm">search</span><input type="text" id="onb-search" value="${onbSearch}" placeholder="Search name or mobile..." oninput="onbSearchDebounce(this.value)" class="text-sm pl-8 pr-3 py-2 rounded-lg border border-sand bg-white text-charcoal placeholder-light focus:ring-2 focus:ring-amber outline-none w-52" /></div>
+      <input type="month" value="${onbMonth}" onchange="onbMonth=this.value;onbPage=1;renderOnboarding()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber outline-none" />
+      <select onchange="onbStatus=this.value;onbPage=1;renderOnboarding()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber outline-none">
+        <option value="" ${!onbStatus?'selected':''}>All Status</option><option value="submitted" ${onbStatus==='submitted'?'selected':''}>Submitted</option><option value="approved" ${onbStatus==='approved'?'selected':''}>Approved</option><option value="rejected" ${onbStatus==='rejected'?'selected':''}>Rejected</option>
+      </select>
+      ${onbSearch||onbMonth||onbStatus?`<button onclick="onbSearch='';onbMonth='';onbStatus='';onbPage=1;renderOnboarding()" class="text-xs text-amber font-bold hover:underline">Clear</button>`:''}
+    </div>
+    ${apps.length === 0 ? '<div class="bg-white p-8 rounded-2xl border border-sand shadow-card text-center"><p class="text-mid">No applications found.</p></div>' : `
     <div class="space-y-3">
-      ${apps.map(a => `
-        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <p class="text-sm font-bold text-dark">${a.candidate_name}</p>
-              <p class="text-xs text-mid">${a.candidate_mobile || ''}</p>
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status==='submitted' ? 'text-amber bg-warm' : a.status==='approved' ? 'text-success bg-success-bg' : a.status==='rejected' ? 'text-danger bg-danger-bg' : 'text-mid bg-warm'}">${a.status}</span>
-          </div>
-          ${a.status === 'submitted' ? `
-          <div class="border-t border-sand pt-3 mt-2">
-            <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-              <div><span class="text-light">DOB:</span> <span class="text-dark font-medium">${fmtDate(a.candidate_dob)}</span></div>
-              <div><span class="text-light">Blood:</span> <span class="text-dark font-medium">${a.candidate_blood_group || '—'}</span></div>
-              <div><span class="text-light">Company:</span> <span class="text-dark font-medium">${a.candidate_company_college || '—'}</span></div>
-              <div><span class="text-light">Parent:</span> <span class="text-dark font-medium">${a.candidate_parent_mobile || '—'}</span></div>
-              <div><span class="text-light">Ref 1:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_1 || '—'}</span></div>
-              <div><span class="text-light">Ref 2:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_2 || '—'}</span></div>
-              ${a.referral_code_used ? `<div class="col-span-2"><span class="text-light">Referral:</span> <span class="text-amber font-bold">${a.referral_code_used}</span></div>` : ''}
-            </div>
-            ${(a.documents && a.documents.length > 0) ? `
-            <div class="mb-3">
-              <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Uploaded Documents</p>
-              <div class="flex flex-wrap gap-2">
-                ${a.documents.map(d => `
-                  <button onclick="previewDocument(${d.id}, '${d.document_type}', '${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-warm rounded-lg text-xs font-semibold text-charcoal hover:bg-sand transition-colors cursor-pointer border border-sand">
-                    <span class="material-symbols-outlined text-sm text-amber">${d.mime_type === 'application/pdf' ? 'picture_as_pdf' : 'image'}</span>
-                    ${d.document_type.replace(/_/g, ' ')}
-                  </button>
-                `).join('')}
-              </div>
-            </div>` : '<p class="text-xs text-danger mb-3">No documents uploaded</p>'}
-            <div class="flex gap-2">
-              <button onclick="approveApplication(${a.id})" class="flex-1 bg-success text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1">
-                <span class="material-symbols-outlined text-sm">check</span>Approve & Assign
-              </button>
-              <button onclick="rejectApplication(${a.id})" class="px-4 py-2 border border-danger text-danger rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button>
-            </div>
-          </div>` : ''}
-        </div>`).join('')}
+      ${apps.map(a => `<div class="bg-white p-4 rounded-2xl border border-sand shadow-card"><div class="flex justify-between items-start mb-2"><div><p class="text-sm font-bold text-dark">${a.candidate_name}</p><p class="text-xs text-mid">${a.candidate_mobile||''}${a.referral_code_used?.startsWith('ROOM:') ? ' • <span class="text-info font-bold">Existing</span>' : ' • <span class="text-amber font-bold">New</span>'}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status==='submitted'?'text-amber bg-warm':a.status==='approved'?'text-success bg-success-bg':a.status==='rejected'?'text-danger bg-danger-bg':'text-mid bg-warm'}">${a.status}</span></div>${a.status==='submitted'?`<div class="border-t border-sand pt-3 mt-2"><div class="grid grid-cols-2 gap-2 text-xs mb-3"><div><span class="text-light">DOB:</span> <span class="text-dark font-medium">${fmtDate(a.candidate_dob)}</span></div><div><span class="text-light">Blood:</span> <span class="text-dark font-medium">${a.candidate_blood_group||'—'}</span></div><div><span class="text-light">Company:</span> <span class="text-dark font-medium">${a.candidate_company_college||'—'}</span></div><div><span class="text-light">Parent:</span> <span class="text-dark font-medium">${a.candidate_parent_mobile||'—'}</span></div><div><span class="text-light">Ref 1:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_1||'—'}</span></div><div><span class="text-light">Ref 2:</span> <span class="text-dark font-medium">${a.candidate_reference_mobile_2||'—'}</span></div>${a.referral_code_used?`<div class="col-span-2"><span class="text-light">Referral:</span> <span class="text-amber font-bold">${a.referral_code_used}</span></div>`:''}</div>${(a.documents&&a.documents.length>0)?`<div class="mb-3"><p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Documents</p><div class="flex flex-wrap gap-2">${a.documents.map(d=>`<button onclick="previewDocument(${d.id},'${d.document_type}','${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-warm rounded-lg text-xs font-semibold text-charcoal hover:bg-sand border border-sand"><span class="material-symbols-outlined text-sm text-amber">image</span>${d.document_type.replace(/_/g,' ')}</button>`).join('')}</div></div>`:'<p class="text-xs text-danger mb-3">No documents</p>'}<div class="flex gap-2"><button onclick="approveApplication(${a.id})" class="flex-1 bg-success text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">check</span>Approve & Assign</button><button onclick="rejectApplication(${a.id})" class="px-4 py-2 border border-danger text-danger rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all">Reject</button></div></div>`:''}</div>`).join('')}
     </div>
+    ${pagination.last_page > 1 ? `<div class="flex items-center justify-center gap-2 mt-6"><button onclick="onbPage=${pagination.current_page-1};renderOnboarding()" ${pagination.current_page<=1?'disabled':''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${pagination.current_page<=1?'text-light bg-warm cursor-not-allowed':'text-amber border border-amber hover:bg-amber hover:text-white'}"><span class="material-symbols-outlined text-sm align-middle">chevron_left</span> Prev</button><span class="text-xs text-mid">Page ${pagination.current_page} of ${pagination.last_page}</span><button onclick="onbPage=${pagination.current_page+1};renderOnboarding()" ${pagination.current_page>=pagination.last_page?'disabled':''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${pagination.current_page>=pagination.last_page?'text-light bg-warm cursor-not-allowed':'text-amber border border-amber hover:bg-amber hover:text-white'}">Next <span class="material-symbols-outlined text-sm align-middle">chevron_right</span></button></div>` : ''}
+    `}
+    ${pendingLinks.length > 0 ? `<div class="mt-6"><p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Active Links (${pendingLinks.length})</p><div class="space-y-2">${pendingLinks.map(l=>`<div class="bg-warm p-3 rounded-xl flex items-center justify-between"><div><p class="text-xs text-mid">Link type: <span class="font-bold text-dark">${l.link_type==='single'?'🔒 Single':'👥 Bulk'}</span></p><p class="text-[10px] text-light">Expires: ${fmtDate(l.expires_at)}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-mid bg-white">pending</span></div>`).join('')}</div></div>` : ''}
+  `;
+}
 
-    ${pendingLinks.length > 0 ? `
-    <div class="mt-6">
-      <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Active Links (${pendingLinks.length})</p>
-      <div class="space-y-2">
-        ${pendingLinks.map(l => `
-          <div class="bg-warm p-3 rounded-xl flex items-center justify-between">
-            <div>
-              <p class="text-xs text-mid">Link type: <span class="font-bold text-dark">${l.link_type === 'single' ? '🔒 Single' : '👥 Bulk'}</span></p>
-              <p class="text-[10px] text-light">Expires: ${fmtDate(l.expires_at)}</p>
-            </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-mid bg-white">pending</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>` : ''}
-    `}`;
+function onbSearchDebounce(val) {
+  clearTimeout(onbDebounceTimer);
+  onbDebounceTimer = setTimeout(() => { onbSearch = val; onbPage = 1; renderOnboarding(); }, 400);
 }
 
 async function approveApplication(invitationId) {
@@ -758,21 +832,29 @@ async function approveApplication(invitationId) {
   } catch(e) { console.error('Failed to load rooms:', e); }
 
   // Filter beds by selected PG (loose comparison for int/string)
-  function getBedsForPg(filterPgId) {
+  function getBedsForPg(filterPgId, preferredRoom) {
     const availableBeds = [];
     allRooms.forEach(r => {
       const roomPgId = r.pg_location_id || r.pg_location?.id;
       if (filterPgId && roomPgId != filterPgId) return;
       (r.beds || []).forEach(b => {
         if (b.status === 'available' || !b.status) {
-          availableBeds.push({ id: b.id, label: `Room ${r.room_number} - Bed ${b.bed_number} (₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo)`, rent: b.monthly_rent });
+          availableBeds.push({ id: b.id, label: `Room ${r.room_number} - Bed ${b.bed_number} (₹${parseInt(b.monthly_rent).toLocaleString('en-IN')}/mo)`, rent: b.monthly_rent, roomNum: r.room_number });
         }
       });
     });
+    // Sort: matching room first
+    if (preferredRoom) {
+      availableBeds.sort((a, b) => {
+        const aMatch = a.roomNum == preferredRoom || a.roomNum === preferredRoom ? -1 : 0;
+        const bMatch = b.roomNum == preferredRoom || b.roomNum === preferredRoom ? -1 : 0;
+        return aMatch - bMatch;
+      });
+    }
     return availableBeds;
   }
 
-  const availableBeds = getBedsForPg(null); // Show all available beds from loaded rooms (already PG-filtered by API)
+  const availableBeds = getBedsForPg(null, roomRef); // Show all available beds, sorted by tenant's room
   if (availableBeds.length === 0) {
     bedsHtml = '<option value="">No available beds! Add rooms/beds first.</option>';
   } else {
@@ -785,10 +867,14 @@ async function approveApplication(invitationId) {
   // Store for PG change handler
   window._approveAllRooms = allRooms;
 
+  // Check if existing tenant (room info stored in referral_code_used as "ROOM:xxx")
+  const roomRef = app?.referral_code_used?.startsWith('ROOM:') ? app.referral_code_used.replace('ROOM:', '') : '';
+
   openModal(`
     <div class="p-6">
       <h3 class="font-display text-lg font-bold text-[#1a1410] mb-1">Approve & Assign Tenant</h3>
-      <p class="text-xs text-[#c8813a] font-semibold mb-4">${app?.candidate_name || 'Candidate'}</p>
+      <p class="text-xs text-[#c8813a] font-semibold mb-4">${app?.candidate_name || 'Candidate'}${roomRef ? ` <span class="text-[#7a6655]">• Room ${roomRef}</span>` : ''}</p>
+      ${roomRef ? `<div class="bg-[#dbeafe] border border-[#1d4ed8]/20 rounded-xl p-2.5 mb-3"><p class="text-[10px] text-[#1d4ed8] font-semibold"><span class="material-symbols-outlined text-sm align-middle">info</span> Existing tenant says they are in <strong>Room ${roomRef}</strong>. Select the matching bed below.</p></div>` : ''}
       <div class="space-y-3">
         <div>
           <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">PG Location *</label>
@@ -1055,14 +1141,18 @@ async function generateOnboarding() {
       <div class="space-y-3">
         <div>
           <label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-2">Link Type</label>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-3 gap-2">
             <label class="flex items-center gap-2 p-3 bg-[#f2ebe0] rounded-xl cursor-pointer border-2 border-[#c8813a] hover:bg-[#e8d8c4]" id="lbl-bulk">
               <input type="radio" name="onboard-type" value="bulk" checked onchange="toggleOnboardType()" class="text-[#c8813a] focus:ring-[#c8813a]" />
-              <div><p class="text-xs font-bold text-[#1a1410]">Bulk Onboarding</p><p class="text-[10px] text-[#7a6655]">Multiple candidates, same link</p></div>
+              <div><p class="text-xs font-bold text-[#1a1410]">New (Bulk)</p><p class="text-[10px] text-[#7a6655]">Multiple new tenants</p></div>
             </label>
             <label class="flex items-center gap-2 p-3 bg-[#f2ebe0] rounded-xl cursor-pointer border-2 border-transparent hover:bg-[#e8d8c4]" id="lbl-single">
               <input type="radio" name="onboard-type" value="single" onchange="toggleOnboardType()" class="text-[#c8813a] focus:ring-[#c8813a]" />
-              <div><p class="text-xs font-bold text-[#1a1410]">Single Onboarding</p><p class="text-[10px] text-[#7a6655]">One candidate only, one-time use</p></div>
+              <div><p class="text-xs font-bold text-[#1a1410]">New (Single)</p><p class="text-[10px] text-[#7a6655]">One new tenant only</p></div>
+            </label>
+            <label class="flex items-center gap-2 p-3 bg-[#f2ebe0] rounded-xl cursor-pointer border-2 border-transparent hover:bg-[#e8d8c4]" id="lbl-existing">
+              <input type="radio" name="onboard-type" value="existing" onchange="toggleOnboardType()" class="text-[#c8813a] focus:ring-[#c8813a]" />
+              <div><p class="text-xs font-bold text-[#1a1410]">Existing</p><p class="text-[10px] text-[#7a6655]">Document verification</p></div>
             </label>
           </div>
         </div>
@@ -1078,11 +1168,13 @@ async function generateOnboarding() {
 }
 
 function toggleOnboardType() {
-  const bulk = document.querySelector('input[name="onboard-type"][value="bulk"]').checked;
-  document.getElementById('lbl-bulk').classList.toggle('border-[#c8813a]', bulk);
-  document.getElementById('lbl-bulk').classList.toggle('border-transparent', !bulk);
-  document.getElementById('lbl-single').classList.toggle('border-[#c8813a]', !bulk);
-  document.getElementById('lbl-single').classList.toggle('border-transparent', bulk);
+  const selected = document.querySelector('input[name="onboard-type"]:checked')?.value;
+  ['lbl-bulk', 'lbl-single', 'lbl-existing'].forEach(id => {
+    const el = document.getElementById(id);
+    const isActive = id === 'lbl-' + (selected === 'bulk' ? 'bulk' : selected === 'single' ? 'single' : 'existing');
+    el.classList.toggle('border-[#c8813a]', isActive);
+    el.classList.toggle('border-transparent', !isActive);
+  });
 }
 
 async function submitGenerateOnboarding() {
@@ -1097,7 +1189,7 @@ async function submitGenerateOnboarding() {
     });
     const link = result.link;
     const expiryDays = Math.round(parseInt(expiry) / 24);
-    const typeLabel = type === 'single' ? 'Single use — expires after one submission.' : 'Multiple people can use this link.';
+    const typeLabel = type === 'single' ? 'Single use — expires after one submission.' : type === 'existing' ? 'For existing tenants — document verification only.' : 'Multiple people can use this link.';
 
     openModal(`
       <div class="p-6 text-center">
@@ -1114,6 +1206,17 @@ async function submitGenerateOnboarding() {
       </div>
     `);
   } catch(err) { showToast(err.data?.message || 'Failed to generate link', 'error'); }
+}
+
+// ─── Tenant Offboarding ──────────────────────────────────────
+function offboardTenant(tenantId, tenantName) {
+  showConfirm('Offboard Tenant', `Offboard <strong>${tenantName}</strong>? This will vacate their bed and mark them as offboarded. Their data will be preserved.`, async () => {
+    try {
+      await api.post(`/admin/tenants/${tenantId}/offboard`);
+      showToast('Tenant offboarded successfully.');
+      showSection('tenants');
+    } catch(err) { showToast(err.data?.message || 'Failed to offboard', 'error'); }
+  });
 }
 
 // ─── Tenant Trash Management ─────────────────────────────────
@@ -1351,6 +1454,33 @@ async function submitChangeRoom(tenantId) {
     // Use the allocate bed API - we need to add this endpoint
     await api.post(`/admin/tenants/${tenantId}/change-bed`, { bed_id: parseInt(bedId) });
     showToast('Tenant moved successfully!');
+    showSection('tenants');
+  } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
+}
+
+// ─── Individual Rent Generation ─────────────────────────────
+function generateIndividualRent(tenantId, tenantName) {
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  openModal(`
+    <div class="p-6">
+      <h3 class="font-display text-lg font-bold text-[#1a1410] mb-2">Generate Rent</h3>
+      <p class="text-sm text-[#7a6655] mb-4">Generate monthly rent for <strong>${tenantName}</strong></p>
+      ${buildFormField('ind-rent-month', 'Billing Month', 'month', '', currentMonth)}
+      <div class="flex gap-3 mt-5">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button>
+        <button onclick="submitIndividualRent(${tenantId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]"><span class="material-symbols-outlined text-sm align-middle">receipt_long</span> Generate</button>
+      </div>
+    </div>
+  `);
+}
+
+async function submitIndividualRent(tenantId) {
+  const month = document.getElementById('ind-rent-month').value;
+  if (!month) { showToast('Select a month', 'error'); return; }
+  closeModal();
+  try {
+    const result = await api.generateIndividualRent(tenantId, month);
+    showToast(result.message);
     showSection('tenants');
   } catch(err) { showToast(err.data?.message || 'Failed', 'error'); }
 }
@@ -1815,7 +1945,7 @@ async function renderElectricity() {
             const tc = (r.beds||[]).filter(b=>b.status==='occupied').length;
             if (statusFilter && bill) { const al=bill.allocations||[]; const ap=al.length>0&&al.every(a=>a.status==='paid'); const sp=al.some(a=>a.status==='paid'); const bs=ap?'paid':sp?'partial':'unpaid'; if(statusFilter!==bs) return ''; }
             if (statusFilter && !bill) return '';
-            if (bill) return `<tr class="border-b border-sand/50 bg-success-bg/20"><td class="p-3 font-bold text-dark">Room ${r.room_number}</td><td class="p-3">${bill.previous_reading||'—'}</td><td class="p-3">${bill.current_reading||'—'}</td><td class="p-3 font-bold">${bill.total_units}</td><td class="p-3">₹${bill.rate_per_unit}</td><td class="p-3 font-bold">₹${parseInt(bill.total_amount).toLocaleString('en-IN')}</td><td class="p-3 text-center">${bill.active_tenants_count}</td><td class="p-3 font-bold text-amber">₹${parseInt(bill.per_tenant_amount).toLocaleString('en-IN')}</td><td class="p-3">${(()=>{const al=bill.allocations||[];const ap=al.length>0&&al.every(a=>a.status==='paid');const sp=al.some(a=>a.status==='paid');return ap?'<span class="text-[10px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full">Paid</span>':sp?'<span class="text-[10px] font-bold text-amber bg-warm px-2 py-0.5 rounded-full">Partial</span>':'<span class="text-[10px] font-bold text-danger bg-danger-bg px-2 py-0.5 rounded-full">Unpaid</span>';})()}</td><td class="p-3"><div class="flex gap-1">${bill.previous_meter_image?`<button onclick="viewElecMeter(${bill.id},'previous')" class="text-[10px] text-amber font-bold">Prev</button>`:''} ${bill.current_meter_image?`<button onclick="viewElecMeter(${bill.id},'current')" class="text-[10px] text-amber font-bold">Curr</button>`:''}</div></td><td class="p-3"><span class="text-[10px] font-bold text-success">✓ Saved</span></td></tr>`;
+            if (bill) return `<tr class="border-b border-sand/50 bg-success-bg/20"><td class="p-3 font-bold text-dark">Room ${r.room_number}</td><td class="p-3">${bill.previous_reading||'—'}</td><td class="p-3">${bill.current_reading||'—'}</td><td class="p-3 font-bold">${bill.total_units}</td><td class="p-3">₹${bill.rate_per_unit}</td><td class="p-3 font-bold">₹${parseInt(bill.total_amount).toLocaleString('en-IN')}</td><td class="p-3 text-center">${bill.active_tenants_count}</td><td class="p-3 font-bold text-amber">₹${parseInt(bill.per_tenant_amount).toLocaleString('en-IN')}</td><td class="p-3">${(()=>{const al=bill.allocations||[];const ap=al.length>0&&al.every(a=>a.status==='paid');const sp=al.some(a=>a.status==='paid');return ap?'<span class="text-[10px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full">Paid</span>':sp?'<span class="text-[10px] font-bold text-amber bg-warm px-2 py-0.5 rounded-full">Partial</span>':'<span class="text-[10px] font-bold text-danger bg-danger-bg px-2 py-0.5 rounded-full">Unpaid</span>';})()}</td><td class="p-3"><div class="flex gap-1">${bill.previous_meter_image?`<button onclick="viewElecMeter(${bill.id},'previous')" class="text-[10px] text-amber font-bold">Prev</button>`:''} ${bill.current_meter_image?`<button onclick="viewElecMeter(${bill.id},'current')" class="text-[10px] text-amber font-bold">Curr</button>`:''}</div></td><td class="p-3"><button onclick="editElecBill(${bill.id}, ${r.id}, ${bill.previous_reading||0}, ${bill.current_reading||0}, ${bill.rate_per_unit})" class="text-[10px] font-bold text-amber hover:underline"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">edit</span></button> <button onclick="deleteElecBill(${bill.id})" class="text-[10px] font-bold text-danger hover:underline"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">delete</span></button></td></tr>`;
             return `<tr class="border-b border-sand/50 hover:bg-warm/30"><td class="p-3 font-bold text-dark">Room ${r.room_number}</td><td class="p-3"><input type="number" id="prev-${r.id}" placeholder="0" class="w-20 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><input type="number" id="curr-${r.id}" placeholder="0" class="w-20 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><span id="units-${r.id}" class="font-bold">0</span></td><td class="p-3"><input type="number" id="rate-${r.id}" value="10" class="w-14 text-xs px-2 py-1.5 rounded-lg border border-sand bg-cream outline-none focus:ring-1 focus:ring-amber" oninput="calcRow(${r.id})" /></td><td class="p-3"><span id="total-${r.id}" class="font-bold">₹0</span></td><td class="p-3 text-center">${tc||'—'}</td><td class="p-3"><span id="pp-${r.id}" class="font-bold text-amber">${tc?'₹0':'—'}</span></td><td class="p-3"><span class="text-[10px] text-light">—</span></td><td class="p-3"><input type="file" id="prev-img-${r.id}" accept="image/*" class="hidden"/><input type="file" id="curr-img-${r.id}" accept="image/*" class="hidden"/><button type="button" onclick="document.getElementById('prev-img-${r.id}').click()" class="text-[10px] text-amber font-bold">+P</button> <button type="button" onclick="document.getElementById('curr-img-${r.id}').click()" class="text-[10px] text-amber font-bold">+C</button></td><td class="p-3"><button type="button" onclick="saveElecRow(${r.id},${tc})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Save</button></td></tr>`;
           }).join('')}</tbody>
         </table>
@@ -1858,6 +1988,53 @@ async function saveElecRow(roomId, tenantCount) {
   if (currImg) fd.append('current_meter_image', currImg);
   try { const r = await api.upload('/admin/electricity-bills', fd); showToast(r.message||'Saved!'); renderElectricity(); }
   catch(err) { showToast(err.data?.message||'Failed', 'error'); }
+}
+
+function editElecBill(billId, roomId, prevReading, currReading, rate) {
+  openModal(`<div class="p-6"><h3 class="font-display text-lg font-bold text-[#1a1410] mb-4">Edit Electricity Bill</h3><div class="space-y-3">
+    ${buildFormField('edit-elec-prev', 'Last Unit', 'number', '', prevReading)}
+    ${buildFormField('edit-elec-curr', 'Current Unit', 'number', '', currReading)}
+    ${buildFormField('edit-elec-rate', 'Rate per Unit (₹)', 'number', '', rate)}
+    <div class="bg-[#f2ebe0] rounded-xl p-3"><p class="text-xs text-[#7a6655]" id="edit-elec-calc">Units: ${(currReading-prevReading).toFixed(1)} | Total: ₹${((currReading-prevReading)*rate).toFixed(0)}</p></div>
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Replace Prev Meter Image</label><input type="file" id="edit-elec-prev-img" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028]" /></div>
+    <div><label class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] block mb-1">Replace Curr Meter Image</label><input type="file" id="edit-elec-curr-img" accept="image/*" class="w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#f2ebe0] file:text-[#3d3028]" /></div>
+  </div><div class="flex gap-3 mt-5"><button onclick="closeModal()" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-[#7a6655] border border-[#e8d8c4] hover:bg-[#f2ebe0]">Cancel</button><button onclick="submitEditElecBill(${billId})" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-[#c8813a] hover:bg-[#e09a50]">Update Bill</button></div></div>`);
+  ['edit-elec-prev','edit-elec-curr','edit-elec-rate'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const p=parseFloat(document.getElementById('edit-elec-prev').value)||0;
+      const c=parseFloat(document.getElementById('edit-elec-curr').value)||0;
+      const r=parseFloat(document.getElementById('edit-elec-rate').value)||10;
+      document.getElementById('edit-elec-calc').textContent=`Units: ${(c>p?(c-p):0).toFixed(1)} | Total: ₹${((c>p?(c-p):0)*r).toFixed(0)}`;
+    });
+  });
+}
+
+async function submitEditElecBill(billId) {
+  const prev=parseFloat(document.getElementById('edit-elec-prev').value)||0;
+  const curr=parseFloat(document.getElementById('edit-elec-curr').value)||0;
+  const rate=parseFloat(document.getElementById('edit-elec-rate').value)||10;
+  const units=curr>prev?(curr-prev):0;
+  if (units<=0){showToast('Current must be > Last','error');return;}
+  closeModal();
+  const fd=new FormData();
+  fd.append('total_units',units); fd.append('rate_per_unit',rate);
+  fd.append('previous_reading',prev); fd.append('current_reading',curr);
+  const pi=document.getElementById('edit-elec-prev-img')?.files[0];
+  const ci=document.getElementById('edit-elec-curr-img')?.files[0];
+  if(pi) fd.append('previous_meter_image',pi);
+  if(ci) fd.append('current_meter_image',ci);
+  try{const r=await api.upload(`/admin/electricity-bills/${billId}/update`,fd);showToast(r.message||'Updated!');renderElectricity();}
+  catch(err){showToast(err.data?.message||'Failed','error');}
+}
+
+function deleteElecBill(billId) {
+  showConfirm('Delete Bill', 'Delete this electricity bill? This will remove all tenant allocations for this bill.', async () => {
+    try {
+      await api.request('DELETE', `/admin/electricity-bills/${billId}`);
+      showToast('Electricity bill deleted.');
+      renderElectricity();
+    } catch(err) { showToast(err.data?.message || 'Failed to delete', 'error'); }
+  });
 }
 
 async function viewElecMeter(billId, type) {

@@ -20,6 +20,11 @@ Route::get('/', function () {
 });
 
 // Serve onboarding form page for candidates
-Route::get('/onboarding/{token}', function () {
+Route::get('/onboarding/{token}', function ($token) {
+    // Check if this is an existing tenant verification link
+    $invitation = \App\Models\OnboardingInvitation::where('token', $token)->first();
+    if ($invitation && $invitation->link_type === 'existing') {
+        return file_get_contents(public_path('verification.html'));
+    }
     return file_get_contents(public_path('onboarding.html'));
 });

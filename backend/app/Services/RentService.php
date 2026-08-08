@@ -76,6 +76,52 @@ class RentService
         // Recalculate the monthly rent due (skip for first payments without a rent record)
         if ($payment->monthlyRent) {
             $payment->monthlyRent->recalculateDue();
+
+            // If payment covers electricity too (amount > rent), mark electricity as paid
+            $tenant = $payment->tenant;
+            if ($tenant) {
+                $rentAmount = $payment->monthlyRent->total_amount ?? 0;
+                $paidExtra = $verifiedAmount - $rentAmount;
+
+                // If they paid more than rent, mark unpaid electricity allocations as paid
+                if ($paidExtra > 0) {
+                    $unpaidElec = $tenant->electricityBillAllocations()
+                        ->where('status', 'unpaid')
+                        ->orderBy('created_at')
+                        ->get();
+
+                    foreach ($unpaidElec as $alloc) {
+                        if ($paidExtra >= $alloc->amount) {
+                            $alloc->update(['status' => 'paid', 'paid_at' => now()]);
+                            $paidExtra -= $alloc->amount;
+                        }
+                        if ($paidExtra <= 0) break;
+                    }
+                }
+            }
+        }
+
+        // For first payments (no monthly rent), also check if electricity should be marked paid
+        if (!$payment->monthlyRent && $payment->tenant) {
+            $tenant = $payment->tenant;
+            $unpaidElec = $tenant->electricityBillAllocations()
+                ->where('status', 'unpaid')
+                ->orderBy('created_at')
+                ->get();
+
+            // If first payment covers rent + electricity, mark electricity paid
+            $rentAmount = $tenant->current_rent ?? 0;
+            $paidExtra = $verifiedAmount - $rentAmount;
+
+            if ($paidExtra > 0) {
+                foreach ($unpaidElec as $alloc) {
+                    if ($paidExtra >= $alloc->amount) {
+                        $alloc->update(['status' => 'paid', 'paid_at' => now()]);
+                        $paidExtra -= $alloc->amount;
+                    }
+                    if ($paidExtra <= 0) break;
+                }
+            }
         }
     }
 }

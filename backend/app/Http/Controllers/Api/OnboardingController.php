@@ -28,7 +28,7 @@ class OnboardingController extends Controller
         $request->validate([
             'pg_location_id' => 'nullable|exists:pg_locations,id',
             'expires_in_hours' => 'nullable|integer|min:1|max:720',
-            'link_type' => 'nullable|in:bulk,single',
+            'link_type' => 'nullable|in:bulk,single,existing',
         ]);
 
         $token = Str::random(64);
@@ -357,13 +357,48 @@ class OnboardingController extends Controller
     {
         $query = OnboardingInvitation::with(['pgLocation', 'createdByUser', 'documents']);
 
+        // Status filter
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        $applications = $query->orderByDesc('created_at')->get();
+        // Search by name or mobile
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('candidate_name', 'like', "%{$search}%")
+                  ->orWhere('candidate_mobile', 'like', "%{$search}%");
+            });
+        }
 
-        return response()->json(['applications' => $applications]);
+        // Month/Year filter (format: YYYY-MM)
+        if ($request->has('month') && $request->month) {
+            $parts = explode('-', $request->month);
+            if (count($parts) === 2) {
+                $query->whereYear('created_at', $parts[0])
+                      ->whereMonth('created_at', $parts[1]);
+            }
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+
+        $total = $query->count();
+        $applications = $query->orderByDesc('created_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return response()->json([
+            'applications' => $applications,
+            'pagination' => [
+                'total' => $total,
+                'per_page' => (int) $perPage,
+                'current_page' => (int) $page,
+                'last_page' => ceil($total / $perPage),
+            ],
+        ]);
     }
 
     /**

@@ -157,6 +157,36 @@ class AdminTenantController extends Controller
     }
 
     /**
+     * Admin: offboard a tenant (vacate bed, mark offboarded, keep records).
+     */
+    public function offboard(Tenant $tenant): JsonResponse
+    {
+        if ($tenant->status !== 'active') {
+            return response()->json(['message' => 'Tenant is not active.'], 422);
+        }
+
+        // Vacate bed
+        $currentAllocation = $tenant->currentBedAllocation;
+        if ($currentAllocation) {
+            $currentAllocation->update(['is_current' => false, 'vacated_at' => now()]);
+            $currentAllocation->bed->update(['status' => 'available']);
+        }
+
+        // Mark offboarded but keep account active for viewing history
+        $tenant->update([
+            'status' => 'offboarded',
+            'offboarded_at' => now(),
+        ]);
+
+        // Deactivate login
+        $tenant->user->update(['is_active' => false]);
+
+        return response()->json([
+            'message' => "{$tenant->user->name} has been offboarded. Bed vacated.",
+        ]);
+    }
+
+    /**
      * Admin: soft delete a tenant (move to trash).
      */
     public function destroy(Tenant $tenant): JsonResponse
