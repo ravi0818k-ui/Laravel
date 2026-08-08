@@ -182,7 +182,9 @@ async function renderHome() {
       <!-- Rent Hero -->
       ${rent ? (() => {
         const pendingSub = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
-        const rentPlusElec = parseInt(rent.total_amount) + parseInt(data.pending_electricity || 0);
+        const baseRent = parseInt(rent.base_rent || rent.total_amount);
+        const elecCharge = parseInt(rent.additional_charge || 0);
+        const totalDue = parseInt(rent.total_amount);
         let statusBadge = '';
         let statusClass = '';
         let showUpload = true;
@@ -204,28 +206,22 @@ async function renderHome() {
       <div class="bg-dark rounded-2xl p-5 mb-5 shadow-card-hover relative overflow-hidden">
         <div class="absolute top-0 right-0 w-32 h-32 bg-amber/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
         <div class="relative z-10">
-          <p class="text-[10px] font-semibold tracking-widest uppercase text-light">${new Date(rent.billing_month).toLocaleString('en-IN', {month:'long',year:'numeric'})} Rent + Electricity</p>
+          <p class="text-[10px] font-semibold tracking-widest uppercase text-light">${new Date(rent.billing_month).toLocaleString('en-IN', {month:'long',year:'numeric'})} Bill</p>
           <div class="flex items-end justify-between mt-2">
             <div>
-              <h3 class="font-display text-3xl font-black text-white">₹${rentPlusElec.toLocaleString('en-IN')}</h3>
-              <p class="text-xs text-light mt-1">Rent ₹${parseInt(rent.total_amount).toLocaleString('en-IN')} + Ele ₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</p>
+              <h3 class="font-display text-3xl font-black text-white">₹${totalDue.toLocaleString('en-IN')}</h3>
+              <div class="text-xs text-light mt-1 space-y-0.5">
+                <p>Rent: ₹${baseRent.toLocaleString('en-IN')}</p>
+                ${elecCharge > 0 ? `<p>Electricity: ₹${elecCharge.toLocaleString('en-IN')}</p>` : ''}
+              </div>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${statusClass}">${statusBadge}</span>
           </div>
           ${showUpload ? `
-          <div class="mt-4 space-y-2">
-            <button onclick="uploadPaymentCombined(${rent.id}, ${parseInt(rent.total_amount)}, ${parseInt(data.pending_electricity || 0)})" class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
-              <span class="material-symbols-outlined text-lg">upload</span>Pay Rent + Electricity (₹${rentPlusElec.toLocaleString('en-IN')})
+          <div class="mt-4">
+            <button onclick="showPaymentUploadModal(${rent.id}, '${new Date(rent.billing_month).toLocaleString('en-IN',{month:'short',year:'numeric'})} — Rent${elecCharge > 0 ? ' + Electricity' : ''}', ${totalDue})" class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
+              <span class="material-symbols-outlined text-lg">upload</span>Pay ₹${totalDue.toLocaleString('en-IN')}
             </button>
-            <div class="flex gap-2">
-              <button onclick="uploadPaymentRentOnly(${rent.id}, ${parseInt(rent.total_amount)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
-                Pay Rent Only (₹${parseInt(rent.total_amount).toLocaleString('en-IN')})
-              </button>
-              ${parseInt(data.pending_electricity || 0) > 0 ? `
-              <button onclick="uploadPaymentElecOnly(${rent.id}, ${parseInt(data.pending_electricity)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
-                Pay Elec Only (₹${parseInt(data.pending_electricity).toLocaleString('en-IN')})
-              </button>` : ''}
-            </div>
           </div>` : pendingSub ? `
           <div class="mt-4 w-full bg-white/10 text-white/80 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center gap-2">
             <span class="material-symbols-outlined text-lg">hourglass_top</span>Payment under verification
@@ -249,8 +245,8 @@ async function renderHome() {
             <span class="material-symbols-outlined text-amber text-lg">electric_bolt</span>
             <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Electricity</p>
           </div>
-          <h4 class="font-display text-lg font-black text-dark">₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</h4>
-          <p class="text-[10px] text-mid">${data.pending_electricity > 0 ? 'Pending' : 'All clear'}</p>
+          <h4 class="font-display text-lg font-black text-dark">₹${parseInt(rent?.additional_charge || data.pending_electricity || 0).toLocaleString('en-IN')}</h4>
+          <p class="text-[10px] text-mid">${parseInt(rent?.additional_charge || data.pending_electricity || 0) > 0 ? 'Included in bill' : 'No charges'}</p>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
           <div class="flex items-center gap-2 mb-2">

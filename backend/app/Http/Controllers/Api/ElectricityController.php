@@ -131,6 +131,12 @@ class ElectricityController extends Controller
         // Update all allocations with new per-tenant amount
         $bill->allocations()->update(['amount' => $perTenantAmount]);
 
+        // Recalculate monthly rent additional_charge for affected tenants
+        $billingService = app(ElectricityBillingService::class);
+        foreach ($bill->allocations as $alloc) {
+            $billingService->updateMonthlyRentElectricity($alloc->tenant_id, $bill->billing_month);
+        }
+
         return response()->json([
             'message' => "Bill updated. ₹{$totalAmount} split as ₹{$perTenantAmount} per tenant.",
             'bill' => $bill->fresh()->load('allocations.tenant'),
@@ -181,8 +187,17 @@ class ElectricityController extends Controller
      */
     public function destroy(ElectricityBill $bill): JsonResponse
     {
+        $tenantIds = $bill->allocations()->pluck('tenant_id');
+        $billingMonth = $bill->billing_month;
+
         $bill->allocations()->delete();
         $bill->delete();
+
+        // Recalculate monthly rent for affected tenants (remove electricity charge)
+        $billingService = app(ElectricityBillingService::class);
+        foreach ($tenantIds as $tenantId) {
+            $billingService->updateMonthlyRentElectricity($tenantId, $billingMonth);
+        }
 
         return response()->json(['message' => 'Electricity bill deleted.']);
     }

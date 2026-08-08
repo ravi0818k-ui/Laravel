@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Bed;
 use App\Models\ElectricityBill;
 use App\Models\ElectricityBillAllocation;
+use App\Models\MonthlyRent;
 use App\Models\Room;
 use App\Models\TenantBedAllocation;
 use Carbon\Carbon;
@@ -15,6 +16,7 @@ class ElectricityBillingService
 {
     /**
      * Create electricity bill for a room and split among active tenants.
+     * Also auto-updates MonthlyRent.additional_charge for each tenant.
      */
     public function createBill(
         Room $room,
@@ -67,9 +69,38 @@ class ElectricityBillingService
                     'tenant_id' => $tenantId,
                     'amount' => $perTenantAmount,
                 ]);
+
+                // Auto-attach electricity to monthly rent as additional_charge
+                $this->updateMonthlyRentElectricity($tenantId, $month);
             }
 
             return $bill;
         });
+    }
+
+    /**
+     * Recalculate and update a tenant's monthly rent additional_charge
+     * based on their total unpaid electricity allocations for that month.
+     */
+    public function updateMonthlyRentElectricity(int $tenantId, string $billingMonth): void
+    {
+        $monthlyRent = MonthlyRent::where('tenant_id', $tenantId)
+            ->where('billing_month', $billingMonth)
+            ->first();
+
+        if (!$monthlyRent) return;
+
+        // Sum all electricity allocations for this tenant in this month
+        $totalElec = ElectricityBillAllocation::where('tenant_id', $tenantId)
+            ->whereHas('electricityBill', function ($q) use ($billingMonth) {
+                $q->where('billing_month', $billingMonth);
+            })
+            ->sum('amount');
+
+        $monthlyRent->update([
+            'additional_charge' => $totalElec,
+            'total_amount' => $monthlyRent->base_rent - ($monthlyRent->discount ?? 0) + $totalElec,
+            'due_amount' => $monthlyRent->base_rent - ($monthlyRent->discount ?? 0) + $totalElec - $monthlyRent->paid_amount,
+        ]);
     }
 }

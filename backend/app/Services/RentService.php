@@ -73,20 +73,30 @@ class RentService
             'verified_at' => now(),
         ]);
 
-        // Recalculate the monthly rent due (skip for first payments without a rent record)
         if ($payment->monthlyRent) {
             $payment->monthlyRent->recalculateDue();
 
-            // If payment covers electricity too (amount > rent), mark electricity as paid
-            $tenant = $payment->tenant;
-            if ($tenant) {
-                $rentAmount = $payment->monthlyRent->total_amount ?? 0;
-                $paidExtra = $verifiedAmount - $rentAmount;
+            // If the monthly rent is now fully paid, mark all electricity allocations for that month as paid
+            $monthlyRent = $payment->monthlyRent->fresh();
+            if ($monthlyRent->status === 'paid' && $payment->tenant) {
+                $payment->tenant->electricityBillAllocations()
+                    ->where('status', 'unpaid')
+                    ->whereHas('electricityBill', function ($q) use ($monthlyRent) {
+                        $q->where('billing_month', $monthlyRent->billing_month);
+                    })
+                    ->update(['status' => 'paid', 'paid_at' => now()]);
+            }
 
-                // If they paid more than rent, mark unpaid electricity allocations as paid
+            // Also handle partial: if verified amount covers base rent + some electricity
+            if ($monthlyRent->status !== 'paid' && $payment->tenant) {
+                $baseRent = $monthlyRent->base_rent ?? 0;
+                $totalVerified = $monthlyRent->paymentSubmissions()->where('status', 'verified')->sum('verified_amount');
+                $paidExtra = $totalVerified - $baseRent;
+
                 if ($paidExtra > 0) {
-                    $unpaidElec = $tenant->electricityBillAllocations()
+                    $unpaidElec = $payment->tenant->electricityBillAllocations()
                         ->where('status', 'unpaid')
+                        ->whereHas('electricityBill', fn($q) => $q->where('billing_month', $monthlyRent->billing_month))
                         ->orderBy('created_at')
                         ->get();
 
@@ -101,19 +111,18 @@ class RentService
             }
         }
 
-        // For first payments (no monthly rent), also check if electricity should be marked paid
+        // For first payments (no monthly rent)
         if (!$payment->monthlyRent && $payment->tenant) {
             $tenant = $payment->tenant;
-            $unpaidElec = $tenant->electricityBillAllocations()
-                ->where('status', 'unpaid')
-                ->orderBy('created_at')
-                ->get();
-
-            // If first payment covers rent + electricity, mark electricity paid
             $rentAmount = $tenant->current_rent ?? 0;
             $paidExtra = $verifiedAmount - $rentAmount;
 
             if ($paidExtra > 0) {
+                $unpaidElec = $tenant->electricityBillAllocations()
+                    ->where('status', 'unpaid')
+                    ->orderBy('created_at')
+                    ->get();
+
                 foreach ($unpaidElec as $alloc) {
                     if ($paidExtra >= $alloc->amount) {
                         $alloc->update(['status' => 'paid', 'paid_at' => now()]);
