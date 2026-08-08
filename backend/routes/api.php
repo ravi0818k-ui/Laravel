@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/tenants/{tenant}/reset-password', [AdminTenantController::class, 'resetPassword']);
             Route::post('/tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate']);
             Route::post('/tenants/{tenant}/offboard', [AdminTenantController::class, 'offboard']);
+            Route::post('/tenants/{tenant}/mark-paid-cash', [AdminTenantController::class, 'markPaidCash']);
 
             // Payments
             Route::get('/payments', [PaymentController::class, 'adminIndex']);

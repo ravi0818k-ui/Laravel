@@ -187,6 +187,56 @@ class AdminTenantController extends Controller
     }
 
     /**
+     * Admin: mark tenant's current month rent as paid via cash (no screenshot needed).
+     */
+    public function markPaidCash(Request $request, Tenant $tenant): JsonResponse
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        // Find the latest unpaid monthly rent
+        $monthlyRent = $tenant->monthlyRents()
+            ->where('status', '!=', 'paid')
+            ->orderByDesc('billing_month')
+            ->first();
+
+        if (!$monthlyRent) {
+            return response()->json(['message' => 'No unpaid rent found for this tenant.'], 422);
+        }
+
+        // Create a payment submission record (cash, no screenshot)
+        \App\Models\PaymentSubmission::create([
+            'monthly_rent_id' => $monthlyRent->id,
+            'tenant_id' => $tenant->id,
+            'claimed_amount' => $request->amount,
+            'payment_method' => 'cash',
+            'transaction_reference' => 'admin_cash_' . now()->format('Ymd'),
+            'status' => 'verified',
+            'verified_amount' => $request->amount,
+            'verified_by' => $request->user()->id,
+            'verified_at' => now(),
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        // Recalculate the monthly rent
+        $monthlyRent->recalculateDue();
+
+        // If fully paid, mark electricity as paid too
+        $monthlyRent->refresh();
+        if ($monthlyRent->status === 'paid') {
+            $tenant->electricityBillAllocations()
+                ->where('status', 'unpaid')
+                ->whereHas('electricityBill', fn($q) => $q->where('billing_month', $monthlyRent->billing_month))
+                ->update(['status' => 'paid', 'paid_at' => now()]);
+        }
+
+        return response()->json([
+            'message' => "₹{$request->amount} cash payment recorded for {$tenant->user->name}. Rent marked as {$monthlyRent->fresh()->status}.",
+        ]);
+    }
+
+    /**
      * Admin: soft delete a tenant (move to trash).
      */
     public function destroy(Tenant $tenant): JsonResponse
