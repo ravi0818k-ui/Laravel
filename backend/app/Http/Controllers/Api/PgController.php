@@ -94,7 +94,13 @@ class PgController extends Controller
             'starting_rent' => 'nullable|numeric|min:0',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'metadata' => 'nullable|array',
         ]);
+
+        // Handle metadata for website display
+        if ($request->has('metadata')) {
+            $validated['metadata'] = $request->metadata;
+        }
 
         $pgLocation = PgLocation::create($validated);
 
@@ -120,6 +126,8 @@ class PgController extends Controller
             'description' => 'nullable|string',
             'starting_rent' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
+            'metadata' => 'nullable|array',
+            'photos' => 'nullable|array',
         ]);
 
         $pgLocation->update($validated);
@@ -135,5 +143,48 @@ class PgController extends Controller
         $pgLocation->load(['rooms.beds']);
 
         return response()->json(['pg_location' => $pgLocation]);
+    }
+
+    /**
+     * Super Admin: upload photos for a PG location.
+     */
+    public function uploadPhotos(Request $request, PgLocation $pgLocation): JsonResponse
+    {
+        $request->validate([
+            'photos' => 'required|array|min:1',
+            'photos.*' => 'image|max:5120',
+        ]);
+
+        $existingPhotos = $pgLocation->photos ?? [];
+
+        foreach ($request->file('photos') as $photo) {
+            $path = $photo->store("pg_photos/{$pgLocation->id}", 'public');
+            $existingPhotos[] = '/storage/' . $path;
+        }
+
+        $pgLocation->update(['photos' => $existingPhotos]);
+
+        return response()->json([
+            'message' => count($request->file('photos')) . ' photo(s) uploaded.',
+            'photos' => $existingPhotos,
+        ]);
+    }
+
+    /**
+     * Super Admin: remove a photo from PG location.
+     */
+    public function removePhoto(Request $request, PgLocation $pgLocation): JsonResponse
+    {
+        $request->validate(['photo_url' => 'required|string']);
+
+        $photos = $pgLocation->photos ?? [];
+        $photos = array_values(array_filter($photos, fn($p) => $p !== $request->photo_url));
+        $pgLocation->update(['photos' => $photos]);
+
+        // Delete file from storage
+        $path = str_replace('/storage/', '', $request->photo_url);
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+
+        return response()->json(['message' => 'Photo removed.', 'photos' => $photos]);
     }
 }

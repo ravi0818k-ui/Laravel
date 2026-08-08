@@ -135,6 +135,8 @@ Route::prefix('v1')->group(function () {
             // PG Location CRUD (create/update)
             Route::post('/pg-locations', [PgController::class, 'store']);
             Route::put('/pg-locations/{pgLocation}', [PgController::class, 'update']);
+            Route::post('/pg-locations/{pgLocation}/photos', [PgController::class, 'uploadPhotos']);
+            Route::post('/pg-locations/{pgLocation}/remove-photo', [PgController::class, 'removePhoto']);
         });
     });
 });
