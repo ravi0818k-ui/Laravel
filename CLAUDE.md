@@ -23,8 +23,11 @@ php artisan migrate
 
 # Run the app (API + dashboards both served by Laravel)
 php artisan serve
-# or, when testing large file uploads (payment screenshots, meter images, documents):
-php -c php-server.ini artisan serve
+
+# When testing file uploads (payment screenshots, meter images, onboarding documents) on Windows,
+# `php -c php-server.ini artisan serve` looks right but does NOT work — see note below. Use instead:
+$env:PHP_INI_SCAN_DIR = "$PWD\php-ini-scan"; php artisan serve --no-reload   # PowerShell
+PHP_INI_SCAN_DIR="$(pwd)/php-ini-scan" php artisan serve --no-reload         # bash
 
 # All-in-one dev (server + queue listener + logs + vite), if using the Vite/Tailwind pipeline:
 composer run dev
@@ -36,6 +39,12 @@ php artisan route:clear
 ```
 
 App runs at `http://127.0.0.1:8000`. Dashboards: `/dashboard/login.html`, `/dashboard/admin.html`, `/dashboard/super-admin.html`, `/dashboard/tenant.html`. Default super admin: mobile `9999999999` / password `admin123`.
+
+### Why `php -c php-server.ini artisan serve` doesn't work (and file uploads fail with it)
+
+`artisan serve` doesn't run the dev server itself — it spawns a **separate** `php -S host:port server.php` child process (`ServeCommand::serverCommand()` in `vendor/laravel/framework`) to actually handle requests. That child is launched via a bare `php_binary()` path with no `-c`/`-d` flags at all, so any ini file passed to the outer `artisan serve` invocation never reaches the process that actually parses uploads — `upload_max_filesize`, `post_max_size`, and any other setting in `php-server.ini` are silently ignored for real requests. Worse, whenever a `.env` file exists and `--no-reload` isn't passed, `ServeCommand` deliberately strips almost every environment variable from that child process (`$passthroughVariables` allowlist) — including `TEMP`/`TMP`. On Windows, `sys_get_temp_dir()` depends on those, so without them PHP falls back to `C:\Windows` (not writable), and **every** file upload fails with "unable to create a temporary file" / `UPLOAD_ERR_NO_TMP_DIR` — a validation-looking 422 that has nothing to do with the request payload.
+
+The fix that actually reaches the worker process: `--no-reload` (stops the env-stripping) plus `PHP_INI_SCAN_DIR` pointing at `backend/php-ini-scan/` (an env var, unlike `-c`, that PHP itself reads on process startup regardless of how it's spawned) — see the commands above. `php-server.ini` still works fine for direct one-off invocations (`php -c php-server.ini some-script.php`) that don't go through `artisan serve`'s child-process spawning; it just never helped the dev server itself. Tradeoff: `--no-reload` also disables `artisan serve`'s normal auto-restart-on-`.env`-change behavior — restart the server manually after editing `.env`.
 
 ### Testing
 
@@ -91,6 +100,8 @@ Electricity: `ElectricityBill` (per room per month, with meter images) splits in
 
 Onboarding: `OnboardingInvitation` has a `link_type` of `bulk` / `single` / `existing` (existing-tenant re-verification links serve `verification.html` instead of `onboarding.html`, see `routes/web.php`). Candidate submits via public token-based routes, uploads go to `storage/app/onboarding/{id}/` as `TenantDocument` rows, and admin approval creates the `User` + `Tenant` + bed allocation in one step.
 
+Every submission creates a *new* child `OnboardingInvitation` row (holding the candidate's data) linked back to the original link via `parent_invitation_id` — the row whose `token` is actually in the URL the candidate has. This distinction matters for `single`-type links: on first submission the **parent's** `status` flips to `submitted` so the link can't be reused, while the **child** is what admins see/approve/reject in the applications list. When `OnboardingController::reject()` rejects a child application, it also resets its parent back to `status: 'pending'` with a fresh `expires_at` (720h out) — so a rejected candidate can reuse the exact same URL to fix and resubmit, rather than the link staying dead or expiring on them. Keep this reopen-on-reject step in mind if you ever touch the reject flow or add a new terminal state for applications.
+
 Tenants use soft deletes (trash/restore/force-delete endpoints under `/admin/tenants/...`), so most tenant queries should go through the `active()` scope or be explicit about `withTrashed()`/`onlyTrashed()`.
 
 ### Error handling convention
@@ -111,4 +122,15 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
 
 ### Production deployment
 
-Deployed to Serverbyt shared hosting (no SSH/composer access there — `vendor/` must be uploaded, storage symlink created via a one-off PHP script, not `artisan storage:link`). The Laravel app lives outside the web root (`~/pga1/`) with `~/public_html/index.php` pointed at it via `usePublicPath`. See `SERVERBYT-DEPLOYMENT-GUIDE.md` and `serverByteSetup.md` (root directory) for the full, previously-debugged deployment steps — consult these before changing anything related to `public_html`, `.htaccess`, or `index.php` entry points, since several non-obvious fixes are already recorded there.
+Deployed to Serverbyt shared hosting (domain `pga1gurgaon.in`). No SSH/composer access there, which shapes the whole layout:
+
+- `~/pga1/` (Laravel app: `app/`, `vendor/`, `.env`, etc.) and `~/public_html/` (web root) are **siblings**, not parent/child — `vendor/` has to be zipped locally and uploaded, since `composer install` can't run on the server.
+- `public_html/index.php` is a **hand-modified** Laravel entry point (not the stock one): it sets `$basePath = dirname(__DIR__) . '/pga1'`, then calls `$app->useStoragePath($basePath.'/storage')` **and** `$app->usePublicPath(__DIR__)`. The `usePublicPath` call is required — without it `public_path()` resolves to the nonexistent `pga1/public/` and any route touching it (e.g. onboarding pages) 500s.
+- No `artisan storage:link` either — the `public_html/storage` → `pga1/storage/app/public` symlink is created by uploading a one-off `symlink.php` to `public_html/`, hitting it once in the browser, then **deleting it immediately** (it's a live symlink-creation script, a security risk to leave up).
+- `.htaccess` in `public_html/` needs `RewriteRule ^$ index.html [L]` placed *before* the catch-all front-controller rule — otherwise `/` gets routed through Laravel's API and shows raw JSON instead of the static landing page.
+- `config/cors.php` uses `allowed_origins => ['*']` in production (frontend and API share the domain, so this is low-risk here — don't assume it's safe to copy elsewhere).
+- The DB host is a specific Serverbyt/StackCP hostname from the panel (e.g. `sdb-81.hosting.stackcp.net`), never `localhost`.
+- Dashboard/website JS must never hardcode `127.0.0.1` — always go through the `API_BASE` auto-detect pattern (see Frontend dashboards above). A past incident: `admin.html` had two hardcoded `http://127.0.0.1:8000/...` document-preview URLs that broke in production; fixed by routing through `API_BASE`. Grep for `127.0.0.1` in dashboard HTML/JS before deploying if touching those files.
+- If exporting the DB from Windows PowerShell for manual import via phpMyAdmin, use `mysqldump ... --result-file=path.sql` rather than `>` redirection — PowerShell's default UTF-16 output on `>` corrupts the SQL file on import.
+
+See `SERVERBYT-DEPLOYMENT-GUIDE.md` (clean step-by-step reference) and `serverByteSetup.md` (the actual dated deployment log, with real hostnames/paths and a "Problems Encountered & Fixes" section) in the repo root for full procedure and history — consult these before changing anything touching `public_html`, `.htaccess`, `index.php`, or `config/cors.php`.

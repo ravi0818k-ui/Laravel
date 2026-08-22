@@ -105,7 +105,7 @@ class OnboardingController extends Controller
             'candidate_company_college_address' => 'nullable|string',
             'candidate_parent_mobile' => 'required|string|digits:10',
             'candidate_reference_mobile_1' => 'required|string|digits:10',
-            'candidate_reference_mobile_2' => 'required|string|digits:10',
+            'candidate_reference_mobile_2' => 'nullable|string|digits:10',
             'preferred_pg_location_id' => 'nullable|exists:pg_locations,id',
             'referral_code_used' => 'nullable|string|max:30',
             'password' => 'nullable|string|min:8',
@@ -128,6 +128,7 @@ class OnboardingController extends Controller
                 'token' => Str::random(64), // unique token for this application
                 'pg_location_id' => $invitation->pg_location_id,
                 'created_by' => $invitation->created_by,
+                'parent_invitation_id' => $invitation->id,
                 'expires_at' => $invitation->expires_at,
                 'status' => 'submitted',
                 'submitted_at' => now(),
@@ -139,7 +140,7 @@ class OnboardingController extends Controller
                 'candidate_company_college_address' => $validated['candidate_company_college_address'] ?? null,
                 'candidate_parent_mobile' => $validated['candidate_parent_mobile'],
                 'candidate_reference_mobile_1' => $validated['candidate_reference_mobile_1'],
-                'candidate_reference_mobile_2' => $validated['candidate_reference_mobile_2'],
+                'candidate_reference_mobile_2' => $validated['candidate_reference_mobile_2'] ?? null,
                 'preferred_pg_location_id' => $validated['preferred_pg_location_id'] ?? null,
                 'referral_code_used' => $validated['referral_code_used'] ?? null,
             ]);
@@ -427,6 +428,19 @@ class OnboardingController extends Controller
         $user = \App\Models\User::where('mobile', $invitation->candidate_mobile)->first();
         if ($user && !$user->tenant) {
             $user->update(['is_active' => false]);
+        }
+
+        // Reopen the original link the candidate used: a rejection means they need
+        // to fix something and resubmit via the same URL, not request a brand new one.
+        // Single-use links otherwise stay locked to 'submitted' forever, and the link's
+        // original expiry could already have passed by the time it's reviewed — so on
+        // rejection we unlock it and give it a fresh, generous expiry window.
+        if ($invitation->parent_invitation_id) {
+            $invitation->parentInvitation?->update([
+                'status' => 'pending',
+                'submitted_at' => null,
+                'expires_at' => now()->addHours(720),
+            ]);
         }
 
         return response()->json([

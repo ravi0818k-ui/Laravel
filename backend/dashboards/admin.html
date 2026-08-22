@@ -24,12 +24,17 @@
 
 <!-- Sidebar -->
 <aside id="sidebar" class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
-  <div class="p-6">
-    <div class="flex items-end gap-0">
-      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
-      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+  <div class="p-6 flex items-start justify-between">
+    <div>
+      <div class="flex items-end gap-0">
+        <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+        <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+      </div>
+      <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Admin Panel</p>
     </div>
-    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Admin Panel</p>
+    <button class="md:hidden p-1 text-light hover:text-white" onclick="closeSidebar()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
   </div>
   <nav class="flex-1 mt-2">
     <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-section="dashboard">
@@ -70,10 +75,13 @@
   </div>
 </aside>
 
+<!-- Sidebar backdrop (mobile only) -->
+<div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-[35] hidden" onclick="closeSidebar()"></div>
+
 <!-- Header -->
 <header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
   <div class="flex items-center gap-3">
-    <button class="md:hidden p-2" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+    <button class="md:hidden p-2" onclick="toggleSidebar()">
       <span class="material-symbols-outlined text-dark">menu</span>
     </button>
     <select id="pg-selector" class="text-sm border border-sand bg-warm rounded-lg px-3 py-2 text-charcoal font-medium focus:ring-amber focus:border-amber min-w-[200px]" onchange="switchPg()"></select>
@@ -105,6 +113,35 @@ function fmtDate(d) {
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// First-payment (rent/security deposit) submissions can be partial and can accumulate
+// across multiple top-up submissions — sum only the VERIFIED amount for a given tag,
+// never assume "a payment exists" means the full expected amount was actually paid.
+function summarizeFirstPaymentBucket(payments, expectedAmt) {
+  const verifiedTotal = payments
+    .filter(p => p.status === 'verified')
+    .reduce((sum, p) => sum + parseFloat(p.verified_amount ?? p.claimed_amount ?? 0), 0);
+  return {
+    verifiedTotal,
+    remaining: Math.max(0, expectedAmt - verifiedTotal),
+    fullyPaid: expectedAmt > 0 && verifiedTotal >= expectedAmt,
+    pending: payments.find(p => p.status === 'verification_pending' || p.status === 'submitted'),
+  };
+}
+
+// Multi-page uploads (e.g. a 2-page Aadhaar PDF) are stored as separate document
+// rows that all share the same document_type — label them "Page N" so they don't
+// look like the same document duplicated when a type appears more than once.
+function labelDocs(docs) {
+  const counts = {};
+  docs.forEach(d => { counts[d.document_type] = (counts[d.document_type] || 0) + 1; });
+  const seen = {};
+  return docs.map(d => {
+    seen[d.document_type] = (seen[d.document_type] || 0) + 1;
+    const label = d.document_type.replace(/_/g, ' ') + (counts[d.document_type] > 1 ? ` (page ${seen[d.document_type]})` : '');
+    return { ...d, label };
+  });
+}
+
 const user = api.getUser();
 document.getElementById('sidebar-name').textContent = user.name;
 document.getElementById('sidebar-avatar').textContent = user.name.substring(0,2).toUpperCase();
@@ -113,6 +150,16 @@ let pgLocations = [];
 let currentPgId = null;
 
 // Nav links
+// Mobile sidebar drawer
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('hidden');
+  document.getElementById('sidebar-overlay').classList.toggle('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.add('hidden');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+}
+
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', () => {
     // Update active state
@@ -123,6 +170,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.add('border-amber', 'text-white', 'bg-charcoal');
     link.classList.remove('border-transparent', 'text-light');
     showSection(link.dataset.section);
+    closeSidebar();
   });
 });
 
@@ -270,6 +318,7 @@ async function renderTenants() {
       <select id="filter-payment" onchange="filterTenants()" class="text-sm px-3 py-2 rounded-lg border border-sand bg-white text-charcoal focus:ring-2 focus:ring-amber focus:border-amber outline-none">
         <option value="">All Payment Status</option>
         <option value="paid">Paid</option>
+        <option value="partial">Partial</option>
         <option value="unpaid">Unpaid</option>
         <option value="in_progress">In Progress</option>
       </select>
@@ -283,9 +332,9 @@ async function renderTenants() {
     ${tenants.length === 0 ? '<p class="text-mid text-center py-8">No tenants yet.</p>' : `
     <div class="bg-white rounded-2xl border border-sand shadow-card">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[700px]">
+        <table class="w-full text-sm min-w-[850px]">
           <thead><tr class="text-left text-[10px] font-semibold tracking-widest uppercase text-mid border-b border-sand">
-            <th class="p-3">Tenant</th><th class="p-3">Room</th><th class="p-3">Rent</th><th class="p-3">Rent Paid</th><th class="p-3">Elec Paid</th><th class="p-3">Status</th><th class="p-3">Actions</th>
+            <th class="p-3">Tenant</th><th class="p-3">Room</th><th class="p-3">Rent</th><th class="p-3">Rent Paid</th><th class="p-3">Partial Payment</th><th class="p-3">Elec Paid</th><th class="p-3">Status</th><th class="p-3">Actions</th>
           </tr></thead>
           <tbody id="tenants-tbody">${tenants.map(t => renderTenantRow(t)).join('')}
           </tbody>
@@ -304,6 +353,9 @@ function getPaymentStatus(t) {
   if (rent.status === 'paid') return { label: 'Paid', class: 'text-success bg-success-bg' };
   const hasPending = (rent.payment_submissions || []).some(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
   if (hasPending) return { label: 'In Progress', class: 'text-amber bg-warm' };
+  // A tenant who's paid part of the bill (e.g. admin verified ₹2000 of an ₹8000 rent) is
+  // not "Unpaid" — the table should show what actually came in, not hide it behind a flat label.
+  if (rent.status === 'partially_paid') return { label: 'Partial', class: 'text-amber bg-warm' };
   return { label: 'Unpaid', class: 'text-danger bg-danger-bg' };
 }
 
@@ -329,6 +381,12 @@ function renderTenantRow(t) {
       <td class="p-3 text-mid text-xs">${t.current_bed_allocation?.bed?.room?.room_number ? 'R' + t.current_bed_allocation.bed.room.room_number + '/B' + t.current_bed_allocation.bed.bed_number : '—'}</td>
       <td class="p-3 font-bold text-dark">₹${parseInt(t.current_rent).toLocaleString('en-IN')}</td>
       <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${payStatus.class}">${payStatus.label}</span></td>
+      <td class="p-3">
+        ${t.latest_rent?.status === 'partially_paid' ? `
+          <p class="text-xs font-bold text-amber">₹${parseInt(t.latest_rent.paid_amount || 0).toLocaleString('en-IN')} <span class="text-[10px] text-mid font-normal">of ₹${parseInt(t.latest_rent.total_amount).toLocaleString('en-IN')}</span></p>
+          <p class="text-[10px] text-danger font-semibold">₹${parseInt(t.latest_rent.due_amount || 0).toLocaleString('en-IN')} due</p>
+        ` : '<span class="text-light text-xs">—</span>'}
+      </td>
       <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${elecStatus.class}">${elecStatus.label}</span></td>
       <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status==='active' ? 'text-success bg-success-bg' : 'text-danger bg-danger-bg'}">${t.status}</span></td>
       <td class="p-3">
@@ -419,41 +477,42 @@ async function viewTenantDetail(tenantId) {
           const rentAmt = parseInt(t.current_rent || 0);
           const secAmt = parseInt(t.security_deposit || 0);
 
-          const rentPay = firstPayments.find(p => p.transaction_reference === 'first_rent' || p.transaction_reference === 'first_both');
-          const secPay = firstPayments.find(p => p.transaction_reference === 'first_security' || p.transaction_reference === 'first_both');
-          const anyPay = firstPayments.length > 0 && !rentPay && !secPay ? firstPayments[0] : null;
-
-          const rp = rentPay || anyPay;
-          const sp = secPay || anyPay;
-
-          function statusBadge(payment) {
-            if (!payment) return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Unpaid</span>';
-            if (payment.status === 'verified') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#2d6a4f] bg-[#d8f3dc]">Paid ✓</span>';
-            if (payment.status === 'rejected') return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Rejected</span>';
-            return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Pending</span>';
+          // A 'first_both' submission (or an untagged legacy one) is meant to cover rent
+          // AND security together in one payment — show it as its own combined line so a
+          // single ₹X payment doesn't get counted as fully satisfying both buckets at once.
+          const combinedPayments = allPayments.filter(p => !p.monthly_rent_id && (p.transaction_reference === 'first_both' || !p.transaction_reference));
+          if (combinedPayments.length > 0) {
+            const combined = summarizeFirstPaymentBucket(combinedPayments, rentAmt + secAmt);
+            const badge = combined.fullyPaid
+              ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#2d6a4f] bg-[#d8f3dc]">Paid ✓</span>'
+              : combined.verifiedTotal > 0
+                ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Partially Paid</span>'
+                : combined.pending
+                  ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Pending</span>'
+                  : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Unpaid</span>';
+            const amountLine = combined.verifiedTotal > 0 && !combined.fullyPaid
+              ? `₹${combined.verifiedTotal.toLocaleString('en-IN')} of ₹${(rentAmt + secAmt).toLocaleString('en-IN')} verified — ₹${combined.remaining.toLocaleString('en-IN')} due`
+              : `₹${(rentAmt + secAmt).toLocaleString('en-IN')} (Rent + Security)`;
+            return `<div class="border-t border-[#e8d8c4] pt-3 mt-3"><p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">First Payment & Security</p><div class="flex items-center justify-between p-2.5 rounded-lg ${combined.fullyPaid ? 'bg-[#d8f3dc]' : combined.verifiedTotal === 0 && !combined.pending ? 'bg-[#fde8e8]' : 'bg-[#f2ebe0]'}"><div><p class="text-xs font-bold text-[#1a1410]">Rent + Security Deposit</p><p class="text-[10px] text-[#7a6655]">${amountLine}</p></div>${badge}</div></div>`;
           }
 
-          return `
-        <div class="border-t border-[#e8d8c4] pt-3 mt-3">
-          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">First Payment & Security</p>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between p-2.5 rounded-lg ${rp?.status === 'verified' ? 'bg-[#d8f3dc]' : !rp ? 'bg-[#fde8e8]' : 'bg-[#f2ebe0]'}">
-              <div>
-                <p class="text-xs font-bold text-[#1a1410]">First Month Rent</p>
-                <p class="text-[10px] text-[#7a6655]">₹${rentAmt.toLocaleString('en-IN')}${rp ? ' via ' + rp.payment_method : ''}</p>
-              </div>
-              ${statusBadge(rp)}
-            </div>
-            ${secAmt > 0 ? `
-            <div class="flex items-center justify-between p-2.5 rounded-lg ${sp?.status === 'verified' ? 'bg-[#d8f3dc]' : !sp ? 'bg-[#fde8e8]' : 'bg-[#f2ebe0]'}">
-              <div>
-                <p class="text-xs font-bold text-[#1a1410]">Security Deposit</p>
-                <p class="text-[10px] text-[#7a6655]">₹${secAmt.toLocaleString('en-IN')}${sp ? ' via ' + sp.payment_method : ''}</p>
-              </div>
-              ${statusBadge(sp)}
-            </div>` : ''}
-          </div>
-        </div>`;
+          const rentBucket = summarizeFirstPaymentBucket(firstPayments.filter(p => p.transaction_reference === 'first_rent'), rentAmt);
+          const secBucket = summarizeFirstPaymentBucket(firstPayments.filter(p => p.transaction_reference === 'first_security'), secAmt);
+
+          function row(label, bucket, expectedAmt) {
+            if (bucket.fullyPaid) {
+              return `<div class="flex items-center justify-between p-2.5 rounded-lg bg-[#d8f3dc]"><div><p class="text-xs font-bold text-[#1a1410]">${label}</p><p class="text-[10px] text-[#7a6655]">₹${bucket.verifiedTotal.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#2d6a4f] bg-[#d8f3dc]">Paid ✓</span></div>`;
+            }
+            if (bucket.verifiedTotal > 0) {
+              return `<div class="flex items-center justify-between p-2.5 rounded-lg bg-[#f2ebe0]"><div><p class="text-xs font-bold text-[#1a1410]">${label}</p><p class="text-[10px] text-[#c8813a] font-semibold">₹${bucket.verifiedTotal.toLocaleString('en-IN')} of ₹${expectedAmt.toLocaleString('en-IN')} — ₹${bucket.remaining.toLocaleString('en-IN')} due</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Partially Paid</span></div>`;
+            }
+            if (bucket.pending) {
+              return `<div class="flex items-center justify-between p-2.5 rounded-lg bg-[#f2ebe0]"><div><p class="text-xs font-bold text-[#1a1410]">${label}</p><p class="text-[10px] text-[#7a6655]">₹${parseFloat(bucket.pending.claimed_amount).toLocaleString('en-IN')} claimed</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c8813a] bg-[#f2ebe0]">Pending</span></div>`;
+            }
+            return `<div class="flex items-center justify-between p-2.5 rounded-lg bg-[#fde8e8]"><div><p class="text-xs font-bold text-[#1a1410]">${label}</p><p class="text-[10px] text-[#7a6655]">₹${expectedAmt.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#c1121f] bg-[#fde8e8]">Unpaid</span></div>`;
+          }
+
+          return `<div class="border-t border-[#e8d8c4] pt-3 mt-3"><p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">First Payment & Security</p><div class="space-y-2">${row('First Month Rent', rentBucket, rentAmt)}${secAmt > 0 ? row('Security Deposit', secBucket, secAmt) : ''}</div></div>`;
         })()}
 
         ${paymentScreenshots.length > 0 ? `
@@ -480,10 +539,10 @@ async function viewTenantDetail(tenantId) {
         <div class="border-t border-[#e8d8c4] pt-3 mt-3">
           <p class="text-[10px] font-semibold uppercase tracking-widest text-[#7a6655] mb-2">Documents</p>
           <div class="flex flex-wrap gap-2">
-            ${docs.map(d => `
+            ${labelDocs(docs).map(d => `
               <button onclick="previewDocument(${d.id}, '${d.document_type}', '${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#f2ebe0] rounded-lg text-xs font-semibold text-[#3d3028] hover:bg-[#e8d8c4] border border-[#e8d8c4]">
                 <span class="text-[#c8813a]">${d.mime_type?.includes('pdf') ? '📎' : '🖼️'}</span>
-                ${d.document_type.replace(/_/g, ' ')}
+                ${d.label}
                 <span class="text-[9px] ${d.verification_status === 'verified' ? 'text-[#2d6a4f]' : 'text-[#c8813a]'}">(${d.verification_status})</span>
               </button>
             `).join('')}
@@ -689,11 +748,14 @@ async function renderPayments() {
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warm text-amber">Pending</span>
             </div>
             <!-- Screenshot Preview -->
-            <div class="mb-3 border border-sand rounded-xl overflow-hidden cursor-pointer" id="screenshot-container-${p.id}" onclick="viewPaymentScreenshot(${p.id}, '${(p.tenant?.user?.name || 'Tenant').replace(/'/g, "\\'")}', '${billingMonth}')">
-              <div class="p-4 text-center bg-warm">
-                <span class="material-symbols-outlined text-amber text-2xl">image</span>
-                <p class="text-[10px] text-mid mt-1">Loading screenshot...</p>
+            <div class="mb-3 flex items-center gap-3 p-2 border border-sand rounded-xl bg-warm">
+              <div class="w-14 h-14 rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0" id="screenshot-thumb-${p.id}">
+                <span class="material-symbols-outlined text-amber text-xl animate-pulse">image</span>
               </div>
+              <p class="text-xs text-mid flex-1">Payment screenshot</p>
+              <button onclick="viewPaymentScreenshot(${p.id}, '${(p.tenant?.user?.name || 'Tenant').replace(/'/g, "\\'")}', '${billingMonth}')" class="text-[10px] font-bold bg-white text-amber px-2.5 py-1.5 rounded-lg border border-amber hover:bg-amber hover:text-white flex items-center gap-1 flex-shrink-0">
+                <span class="material-symbols-outlined text-sm">visibility</span>Preview
+              </button>
             </div>
             <div class="flex gap-2">
               <button onclick="verifyPayment(${p.id}, ${p.claimed_amount})" class="flex-1 bg-success text-white py-2.5 rounded-lg text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1">
@@ -711,8 +773,8 @@ async function renderPayments() {
 }
 
 async function loadPaymentScreenshot(paymentId) {
-  const container = document.getElementById(`screenshot-container-${paymentId}`);
-  if (!container) return;
+  const thumb = document.getElementById(`screenshot-thumb-${paymentId}`);
+  if (!thumb) return;
   try {
     const resp = await fetch(`${API_BASE}/admin/payments/${paymentId}/screenshot`, {
       headers: { 'Authorization': `Bearer ${api.getToken()}` }
@@ -720,19 +782,29 @@ async function loadPaymentScreenshot(paymentId) {
     if (!resp.ok) throw new Error('Not found');
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    container.innerHTML = `
-      <img src="${url}" alt="Payment screenshot" class="w-full max-h-48 object-cover" />
-      <p class="text-[10px] text-center text-mid py-1 bg-warm">Tap to view full screenshot</p>
-    `;
-    container.dataset.blobUrl = url;
+    thumb.innerHTML = `<img src="${url}" alt="Payment screenshot" class="w-full h-full object-cover cursor-pointer" onclick="viewPaymentScreenshotUrl('${url}')" />`;
+    thumb.dataset.blobUrl = url;
   } catch(e) {
-    container.innerHTML = '<p class="p-3 text-xs text-mid text-center">Screenshot not available</p>';
+    thumb.innerHTML = '<span class="material-symbols-outlined text-light text-lg">broken_image</span>';
   }
 }
 
+function viewPaymentScreenshotUrl(imgUrl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="relative max-w-lg w-full">
+      <button onclick="this.closest('.fixed').remove()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-amber">&times;</button>
+      <img src="${imgUrl}" alt="Payment screenshot" class="w-full rounded-xl shadow-2xl" style="max-height:80vh;object-fit:contain;" />
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
 async function viewPaymentScreenshot(paymentId, tenantName, month) {
-  const container = document.getElementById(`screenshot-container-${paymentId}`);
-  let imgUrl = container?.dataset?.blobUrl;
+  const thumb = document.getElementById(`screenshot-thumb-${paymentId}`);
+  let imgUrl = thumb?.dataset?.blobUrl;
   if (!imgUrl) {
     try {
       const resp = await fetch(`${API_BASE}/admin/payments/${paymentId}/screenshot`, {
@@ -838,10 +910,10 @@ async function renderOnboarding() {
             <div class="mb-3">
               <p class="text-[10px] font-semibold uppercase tracking-widest text-mid mb-2">Uploaded Documents</p>
               <div class="flex flex-wrap gap-2">
-                ${a.documents.map(d => `
+                ${labelDocs(a.documents).map(d => `
                   <button onclick="previewDocument(${d.id}, '${d.document_type}', '${d.mime_type}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-warm rounded-lg text-xs font-semibold text-charcoal hover:bg-sand border border-sand">
                     <span class="material-symbols-outlined text-sm text-amber">${d.mime_type === 'application/pdf' ? 'picture_as_pdf' : 'image'}</span>
-                    ${d.document_type.replace(/_/g, ' ')}
+                    ${d.label}
                   </button>
                 `).join('')}
               </div>

@@ -15,6 +15,7 @@ class OnboardingInvitation extends Model
         'created_by',
         'status',
         'link_type',
+        'parent_invitation_id',
         'expires_at',
         'submitted_at',
         'candidate_name',
@@ -57,6 +58,16 @@ class OnboardingInvitation extends Model
     public function documents()
     {
         return $this->hasMany(TenantDocument::class);
+    }
+
+    public function parentInvitation()
+    {
+        return $this->belongsTo(OnboardingInvitation::class, 'parent_invitation_id');
+    }
+
+    public function childApplications()
+    {
+        return $this->hasMany(OnboardingInvitation::class, 'parent_invitation_id');
     }
 
     // ─── Helpers ────────────────────────────────────────────────

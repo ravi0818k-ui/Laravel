@@ -23,13 +23,18 @@
 <body class="bg-cream text-charcoal">
 
 <!-- Sidebar -->
-<aside class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
-  <div class="p-6">
-    <div class="flex items-end gap-0">
-      <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
-      <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+<aside id="sidebar" class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
+  <div class="p-6 flex items-start justify-between">
+    <div>
+      <div class="flex items-end gap-0">
+        <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
+        <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
+      </div>
+      <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Super Admin</p>
     </div>
-    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-light mt-1">Super Admin</p>
+    <button class="md:hidden p-1 text-light hover:text-white" onclick="closeSidebar()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
   </div>
   <nav class="flex-1 mt-2 sidebar-scrollbar overflow-y-auto" id="sidebar-nav">
     <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-page="dashboard">
@@ -68,10 +73,13 @@
   </div>
 </aside>
 
+<!-- Sidebar backdrop (mobile only) -->
+<div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-[35] hidden" onclick="closeSidebar()"></div>
+
 <!-- Top Header -->
 <header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
   <div class="flex items-center gap-3">
-    <button class="md:hidden p-2 text-dark" onclick="document.querySelector('aside').classList.toggle('hidden')">
+    <button class="md:hidden p-2 text-dark" onclick="toggleSidebar()">
       <span class="material-symbols-outlined">menu</span>
     </button>
     <h2 class="font-display text-lg font-bold text-dark md:hidden">PG A1</h2>
@@ -109,12 +117,22 @@
   document.getElementById('user-name').textContent = user.name;
   document.getElementById('user-avatar').textContent = user.name.split(' ').map(w => w[0]).join('').substring(0, 2);
 
+  // Mobile sidebar drawer
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('hidden');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.add('hidden');
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+  }
+
   // ─── Navigation ───────────────────────────────────────────────
   let currentSection = 'dashboard';
 
   document.querySelectorAll('#sidebar-nav a[data-page]').forEach(link => {
     link.style.cursor = 'pointer';
-    link.addEventListener('click', () => showSection(link.dataset.page));
+    link.addEventListener('click', () => { showSection(link.dataset.page); closeSidebar(); });
   });
 
   async function showSection(section) {

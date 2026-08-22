@@ -59,7 +59,7 @@
 // Handle impersonation mode — use impersonate token if available
 (function() {
   const isImpersonate = new URLSearchParams(window.location.search).has('impersonate');
-  
+
   if (isImpersonate) {
     const impToken = localStorage.getItem('pga1_impersonate_token');
     const impUser = localStorage.getItem('pga1_impersonate_user');
@@ -72,7 +72,7 @@
       sessionStorage.setItem('pga1_imp_user', impUser);
     }
   }
-  
+
   // If in impersonation mode, override api token methods to use sessionStorage
   if (isImpersonate || sessionStorage.getItem('pga1_imp_token')) {
     api.getToken = function() { return sessionStorage.getItem('pga1_imp_token'); };
@@ -92,6 +92,59 @@ function fmtDate(d) {
   const date = new Date(d);
   if (isNaN(date)) return d;
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// First-payment (rent/security) submissions can be partial and can accumulate across
+// multiple top-up submissions — sum only the VERIFIED amount for a given tag, never
+// assume "a payment exists" means "the full expected amount was paid."
+function summarizeFirstPaymentBucket(payments, expectedAmt) {
+  const verifiedTotal = payments
+    .filter(p => p.status === 'verified')
+    .reduce((sum, p) => sum + parseFloat(p.verified_amount ?? p.claimed_amount ?? 0), 0);
+  return {
+    verifiedTotal,
+    remaining: Math.max(0, expectedAmt - verifiedTotal),
+    fullyPaid: expectedAmt > 0 && verifiedTotal >= expectedAmt,
+    pending: payments.find(p => p.status === 'verification_pending' || p.status === 'submitted'),
+    rejected: payments.find(p => p.status === 'rejected'),
+  };
+}
+
+function firstPaymentRow(label, refTag, expectedAmt, payments, rentId) {
+  const s = summarizeFirstPaymentBucket(payments, expectedAmt);
+
+  if (s.fullyPaid) {
+    return `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">${label}</p><p class="text-[10px] text-mid">₹${s.verifiedTotal.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-success bg-success-bg">Verified</span></div>`;
+  }
+  if (s.verifiedTotal > 0) {
+    return `<div class="p-3 bg-warm rounded-xl mb-2">
+      <div class="flex items-center justify-between mb-1"><p class="text-xs font-bold text-dark">${label}</p><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber bg-white border border-amber">Partially Paid</span></div>
+      <p class="text-[10px] text-amber font-semibold mb-2">₹${s.verifiedTotal.toLocaleString('en-IN')} of ₹${expectedAmt.toLocaleString('en-IN')} verified — ₹${s.remaining.toLocaleString('en-IN')} due</p>
+      ${s.pending ? '' : `<button onclick="uploadFirstType('${refTag}', ${rentId}, ${s.remaining})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Pay Remaining ₹${s.remaining.toLocaleString('en-IN')}</button>`}
+    </div>`;
+  }
+  if (s.pending) {
+    return `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">${label}</p><p class="text-[10px] text-mid">₹${parseFloat(s.pending.claimed_amount).toLocaleString('en-IN')} claimed</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber bg-warm">Pending</span></div>`;
+  }
+  return `<div class="p-3 bg-danger-bg/30 rounded-xl mb-2">
+    <div class="flex items-center justify-between"><p class="text-xs font-bold text-dark">${label}</p><span class="text-[10px] text-danger font-bold">₹${expectedAmt.toLocaleString('en-IN')} — Unpaid</span></div>
+    ${s.rejected ? `<p class="text-[10px] text-danger mt-1">Rejected: ${s.rejected.rejection_reason || 'Try again'}</p>` : ''}
+    <button onclick="uploadFirstType('${refTag}', ${rentId}, ${expectedAmt})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover mt-1">Upload</button>
+  </div>`;
+}
+
+// Multi-page uploads (e.g. a 2-page Aadhaar PDF) are stored as separate document
+// rows that all share the same document_type — label them "Page N" so they don't
+// look like the same document duplicated when a type appears more than once.
+function labelDocs(docs) {
+  const counts = {};
+  docs.forEach(d => { counts[d.document_type] = (counts[d.document_type] || 0) + 1; });
+  const seen = {};
+  return docs.map(d => {
+    seen[d.document_type] = (seen[d.document_type] || 0) + 1;
+    const label = d.document_type.replace(/_/g, ' ') + (counts[d.document_type] > 1 ? ` (page ${seen[d.document_type]})` : '');
+    return { ...d, label };
+  });
 }
 
 const user = api.getUser();
@@ -182,7 +235,11 @@ async function renderHome() {
       <!-- Rent Hero -->
       ${rent ? (() => {
         const pendingSub = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
-        const rentPlusElec = parseInt(rent.total_amount) + parseInt(data.pending_electricity || 0);
+        const baseRent = parseInt(rent.base_rent || rent.total_amount);
+        const elecCharge = parseInt(rent.additional_charge || 0);
+        const totalDue = parseInt(rent.total_amount);
+        // Remaining balance — not the full bill again — so a partial payer is asked for what's left, not the whole month over.
+        const remainingDue = parseInt(rent.due_amount ?? rent.total_amount);
         let statusBadge = '';
         let statusClass = '';
         let showUpload = true;
@@ -195,6 +252,9 @@ async function renderHome() {
           statusBadge = 'in progress';
           statusClass = 'bg-amber text-white';
           showUpload = false;
+        } else if (rent.status === 'partially_paid') {
+          statusBadge = 'partially paid';
+          statusClass = 'bg-amber text-white';
         } else {
           statusBadge = 'unpaid';
           statusClass = 'bg-danger text-white';
@@ -204,28 +264,23 @@ async function renderHome() {
       <div class="bg-dark rounded-2xl p-5 mb-5 shadow-card-hover relative overflow-hidden">
         <div class="absolute top-0 right-0 w-32 h-32 bg-amber/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
         <div class="relative z-10">
-          <p class="text-[10px] font-semibold tracking-widest uppercase text-light">${new Date(rent.billing_month).toLocaleString('en-IN', {month:'long',year:'numeric'})} Rent + Electricity</p>
+          <p class="text-[10px] font-semibold tracking-widest uppercase text-light">${new Date(rent.billing_month).toLocaleString('en-IN', {month:'long',year:'numeric'})} Bill</p>
           <div class="flex items-end justify-between mt-2">
             <div>
-              <h3 class="font-display text-3xl font-black text-white">₹${rentPlusElec.toLocaleString('en-IN')}</h3>
-              <p class="text-xs text-light mt-1">Rent ₹${parseInt(rent.total_amount).toLocaleString('en-IN')} + Ele ₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</p>
+              <h3 class="font-display text-3xl font-black text-white">₹${totalDue.toLocaleString('en-IN')}</h3>
+              <div class="text-xs text-light mt-1 space-y-0.5">
+                <p>Rent: ₹${baseRent.toLocaleString('en-IN')}</p>
+                ${elecCharge > 0 ? `<p>Electricity: ₹${elecCharge.toLocaleString('en-IN')}</p>` : ''}
+                ${rent.status === 'partially_paid' ? `<p class="text-amber font-semibold">Paid so far: ₹${parseInt(rent.paid_amount || 0).toLocaleString('en-IN')} — ₹${remainingDue.toLocaleString('en-IN')} remaining</p>` : ''}
+              </div>
             </div>
             <span class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${statusClass}">${statusBadge}</span>
           </div>
           ${showUpload ? `
-          <div class="mt-4 space-y-2">
-            <button onclick="uploadPaymentCombined(${rent.id}, ${parseInt(rent.total_amount)}, ${parseInt(data.pending_electricity || 0)})" class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
-              <span class="material-symbols-outlined text-lg">upload</span>Pay Rent + Electricity (₹${rentPlusElec.toLocaleString('en-IN')})
+          <div class="mt-4">
+            <button onclick="showPaymentUploadModal(${rent.id}, '${new Date(rent.billing_month).toLocaleString('en-IN',{month:'short',year:'numeric'})} — Rent${elecCharge > 0 ? ' + Electricity' : ''}', ${remainingDue})" class="w-full bg-amber text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
+              <span class="material-symbols-outlined text-lg">upload</span>Pay ₹${remainingDue.toLocaleString('en-IN')}
             </button>
-            <div class="flex gap-2">
-              <button onclick="uploadPaymentRentOnly(${rent.id}, ${parseInt(rent.total_amount)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
-                Pay Rent Only (₹${parseInt(rent.total_amount).toLocaleString('en-IN')})
-              </button>
-              ${parseInt(data.pending_electricity || 0) > 0 ? `
-              <button onclick="uploadPaymentElecOnly(${rent.id}, ${parseInt(data.pending_electricity)})" class="flex-1 bg-white/10 text-white py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1 hover:bg-white/20 transition-all border border-white/20">
-                Pay Elec Only (₹${parseInt(data.pending_electricity).toLocaleString('en-IN')})
-              </button>` : ''}
-            </div>
           </div>` : pendingSub ? `
           <div class="mt-4 w-full bg-white/10 text-white/80 py-3 rounded-xl font-semibold text-sm text-center flex items-center justify-center gap-2">
             <span class="material-symbols-outlined text-lg">hourglass_top</span>Payment under verification
@@ -233,7 +288,6 @@ async function renderHome() {
         </div>
       </div>`;
       })() : (() => {
-        // Hide "no rent" message if tenant is new (within 2 months) — first payment card will show below
         if (t?.joining_date) {
           const jd = new Date(t.joining_date);
           const twoMonthsAgo = new Date();
@@ -250,8 +304,8 @@ async function renderHome() {
             <span class="material-symbols-outlined text-amber text-lg">electric_bolt</span>
             <p class="text-[10px] font-semibold tracking-widest uppercase text-mid">Electricity</p>
           </div>
-          <h4 class="font-display text-lg font-black text-dark">₹${parseInt(data.pending_electricity || 0).toLocaleString('en-IN')}</h4>
-          <p class="text-[10px] text-mid">${data.pending_electricity > 0 ? 'Pending' : 'All clear'}</p>
+          <h4 class="font-display text-lg font-black text-dark">₹${parseInt(rent?.additional_charge || data.pending_electricity || 0).toLocaleString('en-IN')}</h4>
+          <p class="text-[10px] text-mid">${parseInt(rent?.additional_charge || data.pending_electricity || 0) > 0 ? 'Included in bill' : 'No charges'}</p>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-sand shadow-card">
           <div class="flex items-center gap-2 mb-2">
@@ -289,97 +343,34 @@ async function renderHome() {
         const rentAmt = parseInt(t.current_rent || 0);
         const securityAmt = parseInt(t.security_deposit || 0);
 
-        // Determine what's been paid by checking transaction_reference
         const rentPayment = fps.find(p => p.transaction_reference === 'first_rent' || p.transaction_reference === 'first_both');
         const securityPayment = fps.find(p => p.transaction_reference === 'first_security' || p.transaction_reference === 'first_both');
-        // Fallback: if no type tag, treat single payment as "both"
         const anyPayment = fps.length > 0 && !rentPayment && !securityPayment ? fps[0] : null;
-
         const rentPaid = rentPayment || anyPayment;
         const secPaid = securityPayment || anyPayment;
 
-        // If everything is paid/submitted
         if (rentPaid && secPaid) {
           const fp = fps[0];
-          const fpStatus = fp.status === 'verified' ? 'Verified ✓' : fp.status === 'rejected' ? 'Rejected' : 'Under Verification';
           const fpClass = fp.status === 'verified' ? 'text-success bg-success-bg' : fp.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm';
-          return `
-      <div class="bg-white p-4 rounded-2xl border-2 ${fp.status === 'verified' ? 'border-success' : 'border-amber'} shadow-card mb-5">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">${fp.status === 'verified' ? 'check_circle' : 'hourglass_top'}</span>
-          <p class="text-[10px] font-semibold tracking-widest uppercase ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">First Payment</p>
-        </div>
-        ${fps.map(p => `<div class="flex items-center justify-between mb-1">
-          <p class="text-xs font-bold text-dark">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'verified' ? 'text-success bg-success-bg' : p.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'}">${p.status === 'verified' ? 'Verified' : p.status === 'rejected' ? 'Rejected' : 'Pending'}</span>
-        </div>`).join('')}
-      </div>`;
-        }
-
-        // Show what's paid and what still needs payment
-        let cards = '';
-
-        // Rent status
-        if (rentPaid) {
-          const st = rentPaid.status === 'verified' ? 'Verified' : rentPaid.status === 'rejected' ? 'Rejected' : 'Pending';
-          const cls = rentPaid.status === 'verified' ? 'text-success bg-success-bg' : rentPaid.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm';
-          cards += `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2">
-            <div><p class="text-xs font-bold text-dark">First Month Rent</p><p class="text-[10px] text-mid">₹${rentAmt.toLocaleString('en-IN')}</p></div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${st}</span>
-          </div>`;
-        } else {
-          cards += `<div class="flex items-center justify-between p-3 bg-danger-bg/30 rounded-xl mb-2">
-            <div><p class="text-xs font-bold text-dark">First Month Rent</p><p class="text-[10px] text-danger">₹${rentAmt.toLocaleString('en-IN')} — Unpaid</p></div>
-            <button onclick="uploadFirstType('first_rent', ${rent ? rent.id : 0}, ${rentAmt})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Upload</button>
+          return `<div class="bg-white p-4 rounded-2xl border-2 ${fp.status === 'verified' ? 'border-success' : 'border-amber'} shadow-card mb-5">
+            <div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">${fp.status === 'verified' ? 'check_circle' : 'hourglass_top'}</span><p class="text-[10px] font-semibold tracking-widest uppercase ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">First Payment</p></div>
+            ${fps.map(p => `<div class="flex items-center justify-between mb-1"><p class="text-xs font-bold text-dark">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'verified' ? 'text-success bg-success-bg' : p.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'}">${p.status === 'verified' ? 'Verified' : p.status === 'rejected' ? 'Rejected' : 'Pending'}</span></div>`).join('')}
           </div>`;
         }
 
-        // Security status
+        // If we're here, no single submission covers both rent and security (that case
+        // returns above via the combined view), so each bucket is judged on its own
+        // matching submissions — summed by verified amount, never assumed complete just
+        // because a submission exists.
+        const rid = rent ? rent.id : 0;
+        let cards = firstPaymentRow('First Month Rent', 'first_rent', rentAmt, fps.filter(p => p.transaction_reference === 'first_rent'), rid);
         if (securityAmt > 0) {
-          if (secPaid) {
-            const st = secPaid.status === 'verified' ? 'Verified' : secPaid.status === 'rejected' ? 'Rejected' : 'Pending';
-            const cls = secPaid.status === 'verified' ? 'text-success bg-success-bg' : secPaid.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm';
-            cards += `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2">
-              <div><p class="text-xs font-bold text-dark">Security Deposit</p><p class="text-[10px] text-mid">₹${securityAmt.toLocaleString('en-IN')}</p></div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}">${st}</span>
-            </div>`;
-          } else {
-            cards += `<div class="flex items-center justify-between p-3 bg-danger-bg/30 rounded-xl mb-2">
-              <div><p class="text-xs font-bold text-dark">Security Deposit</p><p class="text-[10px] text-danger">₹${securityAmt.toLocaleString('en-IN')} — Unpaid</p></div>
-              <button onclick="uploadFirstType('first_security', ${rent ? rent.id : 0}, ${securityAmt})" class="text-[10px] font-bold bg-amber text-white px-3 py-1.5 rounded-lg hover:bg-amber-hover">Upload</button>
-            </div>`;
-          }
+          cards += firstPaymentRow('Security Deposit', 'first_security', securityAmt, fps.filter(p => p.transaction_reference === 'first_security'), rid);
         }
 
-        // If nothing paid yet, show full upload option
-        if (!rentPaid && !secPaid) {
-          return `
-      <div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="material-symbols-outlined text-amber">new_releases</span>
-          <p class="text-[10px] font-semibold tracking-widest uppercase text-amber">New Tenant – First Payment</p>
-        </div>
-        <p class="text-xs text-mid mb-3">Upload your first payment screenshot.</p>
-        <div class="text-xs text-dark space-y-1 mb-3">
-          <p>Monthly Rent: <span class="font-bold">₹${rentAmt.toLocaleString('en-IN')}</span></p>
-          ${securityAmt > 0 ? `<p>Security Deposit: <span class="font-bold">₹${securityAmt.toLocaleString('en-IN')}</span></p>` : ''}
-          <p class="font-bold text-amber">Total: ₹${(rentAmt + securityAmt).toLocaleString('en-IN')}</p>
-        </div>
-        <button onclick="showFirstPaymentModal(${rent ? rent.id : 0}, ${rentAmt}, ${securityAmt})" class="w-full bg-amber text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]">
-          <span class="material-symbols-outlined text-lg">upload</span>Upload First Payment
-        </button>
-      </div>`;
-        }
+        if (!rentPaid && !secPaid) { return `<div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5"><div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-amber">new_releases</span><p class="text-[10px] font-semibold tracking-widest uppercase text-amber">New Tenant – First Payment</p></div><p class="text-xs text-mid mb-3">Upload your first payment screenshot.</p><div class="text-xs text-dark space-y-1 mb-3"><p>Monthly Rent: <span class="font-bold">₹${rentAmt.toLocaleString('en-IN')}</span></p>${securityAmt > 0 ? `<p>Security Deposit: <span class="font-bold">₹${securityAmt.toLocaleString('en-IN')}</span></p>` : ''}<p class="font-bold text-amber">Total: ₹${(rentAmt + securityAmt).toLocaleString('en-IN')}</p></div><button onclick="showFirstPaymentModal(${rent ? rent.id : 0}, ${rentAmt}, ${securityAmt})" class="w-full bg-amber text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-hover transition-all active:scale-[0.98]"><span class="material-symbols-outlined text-lg">upload</span>Upload First Payment</button></div>`; }
 
-        // Partial payment — show status cards
-        return `
-      <div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="material-symbols-outlined text-amber">new_releases</span>
-          <p class="text-[10px] font-semibold tracking-widest uppercase text-amber">First Payment Status</p>
-        </div>
-        ${cards}
-      </div>`;
+        return `<div class="bg-white p-4 rounded-2xl border-2 border-amber shadow-card mb-5"><div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-amber">new_releases</span><p class="text-[10px] font-semibold tracking-widest uppercase text-amber">First Payment Status</p></div>${cards}</div>`;
       })()}
     `;
   } catch (err) {
@@ -453,6 +444,8 @@ async function renderRents() {
               const statusLabel = rent.status.replace('_',' ');
               const elecAmount = elec ? `₹${parseInt(elec.amount)}` : '—';
               const elecSplitInfo = elec && elec.tenantsCount > 1 ? ` (÷${elec.tenantsCount})` : '';
+              // Remaining balance owed for this month — what a partial payer still needs to clear.
+              const remainingDue = parseInt(rent.due_amount ?? rent.total_amount);
 
               // Check if payment is pending verification
               const pendingPayment = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
@@ -475,6 +468,7 @@ async function renderRents() {
                   </div>
                   ${elec ? `<div class="text-[9px] text-light">${elec.previousReading && elec.currentReading ? elec.previousReading + ' → ' + elec.currentReading + ' = ' + elec.totalUnits + ' units' : elec.totalUnits + ' units'} × ₹${elec.ratePerUnit}</div>
                   ${elec.hasPrevImage || elec.hasCurrImage ? '<button onclick="viewMeterImages(' + elec.billId + ')" class="text-[10px] text-amber font-semibold hover:underline">📷 View Meter</button>' : ''}` : ''}
+                  ${rent.status === 'partially_paid' ? `<div class="flex justify-between"><span class="text-[10px] text-amber font-semibold">Remaining Due</span><span class="text-xs font-bold text-amber">₹${remainingDue.toLocaleString('en-IN')}</span></div>` : ''}
                 </div>
                 ${isPaid ? `
                 <div class="w-full bg-success-bg text-success py-2 rounded-lg text-[11px] font-bold text-center">
@@ -486,13 +480,13 @@ async function renderRents() {
                 <div class="w-full bg-danger-bg text-danger py-2 rounded-lg text-[10px] font-bold text-center mb-2">
                   <span class="material-symbols-outlined text-sm align-middle">error</span> Rejected: ${rejectedPayment.rejection_reason || 'Try again'}
                 </div>
-                <button onclick="uploadPaymentForMonth(${rent.id}, '${monthName} ${year}')"
+                <button onclick="showPaymentUploadModal(${rent.id}, '${monthName} ${year}', ${remainingDue}, null, 'rents')"
                   class="w-full bg-amber text-white py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-amber-hover transition-all active:scale-[0.97]">
                   <span class="material-symbols-outlined text-sm">upload</span>Re-upload Payment
                 </button>` : `
-                <button onclick="uploadPaymentForMonth(${rent.id}, '${monthName} ${year}')"
+                <button onclick="showPaymentUploadModal(${rent.id}, '${monthName} ${year}', ${remainingDue}, null, 'rents')"
                   class="w-full bg-amber text-white py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-amber-hover transition-all active:scale-[0.97]">
-                  <span class="material-symbols-outlined text-sm">upload</span>Upload Payment
+                  <span class="material-symbols-outlined text-sm">upload</span>${rent.status === 'partially_paid' ? `Pay Remaining ₹${remainingDue.toLocaleString('en-IN')}` : 'Upload Payment'}
                 </button>`}
               </div>`;
             }).join('')}
@@ -503,74 +497,6 @@ async function renderRents() {
   } catch(err) {
     document.getElementById('main').innerHTML = '<p class="text-danger text-center mt-8">Failed to load. <button onclick="loadSection(\'rents\')" class="text-amber font-bold">Retry</button></p>';
   }
-}
-
-function uploadPaymentForMonth(rentId, monthLabel) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    // Show inline modal for amount and method
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
-        <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
-        <p class="text-xs text-mid mb-4">${monthLabel} — Rent + Electricity Bill</p>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
-          <input type="number" id="pay-amount" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" placeholder="Total amount paid" />
-        </div>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
-          <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
-            <option value="upi">UPI</option>
-            <option value="gpay">GPay</option>
-            <option value="phonepe">PhonePe</option>
-            <option value="paytm">Paytm</option>
-            <option value="bank_transfer">Bank Transfer</option>
-            <option value="cash">Cash</option>
-          </select>
-        </div>
-        <div class="mb-4">
-          <p class="text-[10px] text-mid mb-1">Screenshot: <span class="font-bold text-dark">${file.name}</span></p>
-        </div>
-        <div class="flex gap-2">
-          <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
-          <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    document.getElementById('pay-cancel').onclick = () => overlay.remove();
-    document.getElementById('pay-submit').onclick = async () => {
-      const amount = document.getElementById('pay-amount').value;
-      const method = document.getElementById('pay-method').value;
-      if (!amount || parseFloat(amount) <= 0) { alert('Please enter payment amount'); return; }
-
-      const formData = new FormData();
-      if (rentId) formData.append('monthly_rent_id', rentId);
-      formData.append('claimed_amount', amount);
-      formData.append('payment_method', method);
-      formData.append('screenshot', file);
-
-      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
-
-      try {
-        await api.submitPayment(formData);
-        overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
-        setTimeout(() => { overlay.remove(); loadSection('rents'); }, 1500);
-      } catch(err) {
-        overlay.remove();
-        alert('Error: ' + (err.data?.message || 'Upload failed'));
-      }
-    };
-  };
-  input.click();
 }
 
 async function renderProfile() {
@@ -595,108 +521,143 @@ async function renderProfile() {
       ${p.documents && p.documents.length > 0 ? `
       <h3 class="font-display text-lg font-bold text-dark mt-6 mb-3">Documents</h3>
       <div class="space-y-2">
-        ${p.documents.map(d => `
+        ${labelDocs(p.documents).map(d => `
           <div class="bg-white p-3 rounded-xl border border-sand flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-sm ${d.verification_status==='verified' ? 'text-success' : d.verification_status==='correction_required' ? 'text-danger' : 'text-amber'}">${d.verification_status==='verified' ? 'verified' : d.verification_status==='correction_required' ? 'error' : 'pending'}</span>
-              <span class="text-sm text-dark capitalize">${d.document_type.replace('_',' ')}</span>
+              <span class="text-sm text-dark capitalize">${d.label}</span>
             </div>
             <span class="text-[10px] font-bold ${d.verification_status==='verified' ? 'text-success' : d.verification_status==='correction_required' ? 'text-danger' : 'text-amber'}">${d.verification_status.replace('_',' ')}</span>
           </div>`).join('')}
       </div>` : ''}
+
+      <!-- Change Password -->
+      <div class="mt-6">
+        <h3 class="font-display text-lg font-bold text-dark mb-3">Change Password</h3>
+        <div class="bg-white p-4 rounded-2xl border border-sand shadow-card space-y-3">
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">New Password</label>
+            <input type="password" id="new-pwd" placeholder="Min 6 characters" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" />
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Confirm Password</label>
+            <input type="password" id="confirm-pwd" placeholder="Repeat password" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" />
+          </div>
+          <button onclick="changePassword()" class="w-full bg-amber text-white py-2.5 rounded-xl font-bold text-sm hover:bg-amber-hover transition-all">Update Password</button>
+        </div>
+      </div>
     `;
   } catch(err) {
     document.getElementById('main').innerHTML = '<p class="text-danger text-center mt-8">Failed to load profile.</p>';
   }
 }
 
-function uploadPayment(rentId) {
-  uploadPaymentForMonth(rentId, 'Current Month');
+async function changePassword() {
+  const pwd = document.getElementById('new-pwd').value;
+  const confirm = document.getElementById('confirm-pwd').value;
+  if (!pwd || pwd.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  if (pwd !== confirm) { alert('Passwords do not match.'); return; }
+  try {
+    await api.post('/tenant/change-password', { new_password: pwd });
+    document.getElementById('new-pwd').value = '';
+    document.getElementById('confirm-pwd').value = '';
+    alert('Password updated successfully!');
+  } catch(err) { alert(err.data?.message || 'Failed to update password.'); }
 }
 
-function uploadPaymentCombined(rentId, rentAmount, elecAmount) {
-  const totalAmount = rentAmount + elecAmount;
-  showPaymentUploadModal(rentId, `Rent (₹${rentAmount.toLocaleString('en-IN')}) + Electricity (₹${elecAmount.toLocaleString('en-IN')})`, totalAmount);
-}
-
-function uploadPaymentRentOnly(rentId, rentAmount) {
-  showPaymentUploadModal(rentId, 'Rent Only', rentAmount);
-}
-
-function uploadPaymentElecOnly(rentId, elecAmount) {
-  showPaymentUploadModal(rentId, 'Electricity Only', elecAmount);
-}
-
-function showPaymentUploadModal(rentId, label, suggestedAmount) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
-        <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
-        <p class="text-xs text-mid mb-4">${label}</p>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
-          <input type="number" id="pay-amount" value="${suggestedAmount}" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" />
-        </div>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
-          <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
-            <option value="upi">UPI</option>
-            <option value="gpay">GPay</option>
-            <option value="phonepe">PhonePe</option>
-            <option value="paytm">Paytm</option>
-            <option value="bank_transfer">Bank Transfer</option>
-            <option value="cash">Cash</option>
-          </select>
-        </div>
-        <div class="mb-4">
-          <p class="text-[10px] text-mid mb-1">Screenshot: <span class="font-bold text-dark">${file.name}</span></p>
-        </div>
-        <div class="flex gap-2">
-          <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
-          <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
-        </div>
+// Single upload flow for every payment scenario — a regular month's rent, a partial
+// top-up on a month already partly paid, or a new tenant's first rent/security deposit.
+// One popup: month, amount (defaulted to what's actually still owed, not the full bill
+// again), method, and the screenshot — matching what the tenant needs to fill in one place.
+function showPaymentUploadModal(rentId, label, dueAmount, refTag = null, reloadTo = 'home') {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
+      <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
+      <p class="text-xs text-mid mb-4">${label}</p>
+      ${dueAmount > 0 ? `<p class="text-xs text-mid mb-3">Amount Due: <span class="font-bold text-dark">₹${dueAmount.toLocaleString('en-IN')}</span></p>` : ''}
+      <div class="mb-1">
+        <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
+        <input type="number" id="pay-amount" value="${dueAmount > 0 ? dueAmount : ''}" placeholder="Amount paid" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" oninput="updatePaymentHint(${dueAmount})" />
       </div>
-    `;
-    document.body.appendChild(overlay);
+      <p id="pay-hint" class="text-[10px] mb-3 h-3"></p>
+      <div class="mb-3">
+        <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
+        <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
+          <option value="upi">UPI</option>
+          <option value="gpay">GPay</option>
+          <option value="phonepe">PhonePe</option>
+          <option value="paytm">Paytm</option>
+          <option value="bank_transfer">Bank Transfer</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Screenshot</label>
+        <input type="file" id="pay-screenshot" accept="image/*" onchange="document.getElementById('pay-file-name').textContent = this.files[0]?.name || 'No file selected'" class="w-full text-xs" />
+        <p id="pay-file-name" class="text-[10px] text-mid mt-1">No file selected</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
+        <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  updatePaymentHint(dueAmount);
 
-    document.getElementById('pay-cancel').onclick = () => overlay.remove();
-    document.getElementById('pay-submit').onclick = async () => {
-      const amount = document.getElementById('pay-amount').value;
-      const method = document.getElementById('pay-method').value;
-      if (!amount || parseFloat(amount) <= 0) { alert('Please enter payment amount'); return; }
+  document.getElementById('pay-cancel').onclick = () => overlay.remove();
+  document.getElementById('pay-submit').onclick = async () => {
+    const amount = document.getElementById('pay-amount').value;
+    const method = document.getElementById('pay-method').value;
+    const file = document.getElementById('pay-screenshot').files[0];
+    if (!amount || parseFloat(amount) <= 0) { alert('Please enter the payment amount.'); return; }
+    if (!file) { alert('Please attach the payment screenshot.'); return; }
 
-      const formData = new FormData();
-      if (rentId) formData.append('monthly_rent_id', rentId);
-      formData.append('claimed_amount', amount);
-      formData.append('payment_method', method);
-      formData.append('screenshot', file);
+    const formData = new FormData();
+    if (rentId) formData.append('monthly_rent_id', rentId);
+    formData.append('claimed_amount', amount);
+    formData.append('payment_method', method);
+    formData.append('screenshot', file);
+    if (refTag) formData.append('transaction_reference', refTag);
 
-      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
+    overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
 
-      try {
-        await api.submitPayment(formData);
-        overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
-        setTimeout(() => { overlay.remove(); loadSection('home'); }, 1500);
-      } catch(err) {
-        overlay.remove();
-        alert('Error: ' + (err.data?.message || 'Upload failed'));
-      }
-    };
+    try {
+      await api.submitPayment(formData);
+      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
+      setTimeout(() => { overlay.remove(); loadSection(reloadTo); }, 1500);
+    } catch(err) {
+      overlay.remove();
+      alert('Error: ' + (err.data?.message || 'Upload failed'));
+    }
   };
-  input.click();
+}
+
+// Live full/partial hint under the amount field — purely informational, derived from
+// what's typed vs. what's due; the server is the source of truth for paid/partially_paid/paid status.
+function updatePaymentHint(dueAmount) {
+  const hint = document.getElementById('pay-hint');
+  const amountInput = document.getElementById('pay-amount');
+  if (!hint || !amountInput) return;
+  const amount = parseFloat(amountInput.value);
+
+  if (!dueAmount || dueAmount <= 0 || !amount || amount <= 0) {
+    hint.textContent = '';
+    return;
+  }
+  if (amount < dueAmount) {
+    hint.className = 'text-[10px] mb-3 h-3 text-amber font-semibold';
+    hint.textContent = `Partial payment — ₹${(dueAmount - amount).toLocaleString('en-IN')} will still be due.`;
+  } else {
+    hint.className = 'text-[10px] mb-3 h-3 text-success font-semibold';
+    hint.textContent = 'This pays the full amount due.';
+  }
 }
 
 function showFirstPaymentModal(rentId, rentAmt, securityAmt) {
   const totalAmt = rentAmt + securityAmt;
-
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
   overlay.innerHTML = `
@@ -706,25 +667,15 @@ function showFirstPaymentModal(rentId, rentAmt, securityAmt) {
       <div class="space-y-2 mb-4">
         <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-amber hover:bg-warm" id="fp-opt-both">
           <input type="radio" name="fp-type" value="both" checked onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
-          <div>
-            <p class="text-sm font-bold text-dark">Rent + Security Deposit</p>
-            <p class="text-xs text-mid">₹${rentAmt.toLocaleString('en-IN')} + ₹${securityAmt.toLocaleString('en-IN')} = ₹${totalAmt.toLocaleString('en-IN')}</p>
-          </div>
+          <div><p class="text-sm font-bold text-dark">Rent + Security Deposit</p><p class="text-xs text-mid">₹${rentAmt.toLocaleString('en-IN')} + ₹${securityAmt.toLocaleString('en-IN')} = ₹${totalAmt.toLocaleString('en-IN')}</p></div>
         </label>
         <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-transparent hover:bg-warm" id="fp-opt-rent">
           <input type="radio" name="fp-type" value="rent" onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
-          <div>
-            <p class="text-sm font-bold text-dark">Only Rent</p>
-            <p class="text-xs text-mid">₹${rentAmt.toLocaleString('en-IN')}</p>
-          </div>
+          <div><p class="text-sm font-bold text-dark">Only Rent</p><p class="text-xs text-mid">₹${rentAmt.toLocaleString('en-IN')}</p></div>
         </label>
-        ${securityAmt > 0 ? `
-        <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-transparent hover:bg-warm" id="fp-opt-security">
+        ${securityAmt > 0 ? `<label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer border-2 border-transparent hover:bg-warm" id="fp-opt-security">
           <input type="radio" name="fp-type" value="security" onchange="updateFpSelection()" class="text-amber focus:ring-amber" />
-          <div>
-            <p class="text-sm font-bold text-dark">Only Security Deposit</p>
-            <p class="text-xs text-mid">₹${securityAmt.toLocaleString('en-IN')}</p>
-          </div>
+          <div><p class="text-sm font-bold text-dark">Only Security Deposit</p><p class="text-xs text-mid">₹${securityAmt.toLocaleString('en-IN')}</p></div>
         </label>` : ''}
       </div>
       <div class="flex gap-2">
@@ -754,78 +705,13 @@ function proceedFirstPayment(rentId, rentAmt, securityAmt) {
   let refTag = 'first_both';
   if (type === 'rent') { amount = rentAmt; label = 'First Month Rent Only'; refTag = 'first_rent'; }
   if (type === 'security') { amount = securityAmt; label = 'Security Deposit Only'; refTag = 'first_security'; }
-
-  // Remove the selection overlay
   document.querySelector('.fixed.inset-0')?.remove();
-
-  // Open the payment upload modal with type tag
-  showPaymentUploadModalWithRef(rentId || 0, label, amount, refTag);
+  showPaymentUploadModal(rentId || 0, label, amount, refTag);
 }
 
 function uploadFirstType(refTag, rentId, amount) {
   const label = refTag === 'first_rent' ? 'First Month Rent' : 'Security Deposit';
-  showPaymentUploadModalWithRef(rentId || 0, label, amount, refTag);
-}
-
-function showPaymentUploadModalWithRef(rentId, label, suggestedAmount, refTag) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-card-hover">
-        <h3 class="font-display text-lg font-bold text-dark mb-1">Upload Payment</h3>
-        <p class="text-xs text-mid mb-4">${label}</p>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Amount (₹)</label>
-          <input type="number" id="pay-amount" value="${suggestedAmount}" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none" />
-        </div>
-        <div class="mb-3">
-          <label class="text-[10px] font-semibold uppercase tracking-widest text-mid block mb-1">Payment Method</label>
-          <select id="pay-method" class="w-full bg-cream text-sm px-3 py-2.5 rounded-xl border border-sand focus:ring-2 focus:ring-amber outline-none">
-            <option value="upi">UPI</option><option value="gpay">GPay</option><option value="phonepe">PhonePe</option><option value="paytm">Paytm</option><option value="bank_transfer">Bank Transfer</option><option value="cash">Cash</option>
-          </select>
-        </div>
-        <div class="mb-4"><p class="text-[10px] text-mid">Screenshot: <span class="font-bold text-dark">${file.name}</span></p></div>
-        <div class="flex gap-2">
-          <button id="pay-cancel" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-mid border border-sand hover:bg-warm">Cancel</button>
-          <button id="pay-submit" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-amber hover:bg-amber-hover">Submit</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    document.getElementById('pay-cancel').onclick = () => overlay.remove();
-    document.getElementById('pay-submit').onclick = async () => {
-      const amount = document.getElementById('pay-amount').value;
-      const method = document.getElementById('pay-method').value;
-      if (!amount || parseFloat(amount) <= 0) { alert('Please enter payment amount'); return; }
-
-      const formData = new FormData();
-      if (rentId) formData.append('monthly_rent_id', rentId);
-      formData.append('claimed_amount', amount);
-      formData.append('payment_method', method);
-      formData.append('screenshot', file);
-      formData.append('transaction_reference', refTag);
-
-      overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><div class="w-10 h-10 border-4 border-sand border-t-amber rounded-full animate-spin mx-auto mb-3"></div><p class="text-sm text-mid">Uploading...</p></div>';
-
-      try {
-        await api.submitPayment(formData);
-        overlay.innerHTML = '<div class="bg-white rounded-2xl p-8 text-center shadow-card-hover"><p class="text-3xl mb-2">✅</p><p class="text-sm font-bold text-dark">Payment submitted for verification!</p></div>';
-        setTimeout(() => { overlay.remove(); loadSection('home'); }, 1500);
-      } catch(err) {
-        overlay.remove();
-        alert('Error: ' + (err.data?.message || 'Upload failed'));
-      }
-    };
-  };
-  input.click();
+  showPaymentUploadModal(rentId || 0, label, amount, refTag);
 }
 
 async function viewMeterImages(billId) {
