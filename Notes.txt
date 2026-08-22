@@ -79,3 +79,30 @@ DB_USERNAME=pga1db-35303837f495
 DB_PASSWORD=<the password you just set>
 
 9166785675
+#####SLA:-Learning: 
+https://abhishekranjan6759.github.io/quiz-assessment-app/
+https://abhishekranjan6759.github.io/revision-tracker/
+https://abhishekranjan6759.github.io/WorkStatus/
+https://abhishekranjan6759.github.io/InterviewOS/
+
+
+######
+
+
+How to create Notes from AI. 
+
+I will teach how to ask kiro to generate AI notes, with python file. 
+
+upload that in github and share with people to download and use it. 
+
+Subject history or coding.
+
+sell course on instagram. 
+
+Diffcuilty: you will show the python script to generate the pdf, but that will not help. 
+
+
+ ####
+ JavaScript. 
+ 
+ creation on array, inserting and accessing the value. 
