@@ -18,14 +18,29 @@
       }}
     }
   </script>
-  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}.sidebar-scrollbar::-webkit-scrollbar{width:4px}.sidebar-scrollbar::-webkit-scrollbar-thumb{background:rgba(200,129,58,0.3);border-radius:10px}</style>
+  <style>
+    body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+    .sidebar-scrollbar::-webkit-scrollbar{width:4px}
+    .sidebar-scrollbar::-webkit-scrollbar-thumb{background:rgba(200,129,58,0.3);border-radius:10px}
+    #sidebar,#main-content,#header{transition:width .18s ease,margin-left .18s ease,left .18s ease}
+    html.sidebar-collapsed #sidebar{width:5rem}
+    html.sidebar-collapsed #sidebar .sidebar-label{display:none}
+    html.sidebar-collapsed #sidebar-nav a{justify-content:center;gap:0}
+    html.sidebar-collapsed #sidebar-toggle-btn{transform:rotate(180deg)}
+    @media (min-width:768px){
+      html.sidebar-collapsed #main-content{margin-left:5rem}
+      html.sidebar-collapsed #header{left:5rem}
+    }
+  </style>
 </head>
 <body class="bg-cream text-charcoal overflow-x-hidden">
+<script>document.documentElement.classList.toggle('sidebar-collapsed', localStorage.getItem('pga1_sidebar_collapsed') === '1');</script>
 
 <!-- Sidebar -->
 <aside id="sidebar" class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
-  <div class="p-6 flex items-start justify-between">
-    <div>
+  <div class="p-6 flex items-start justify-between relative">
+    <div class="sidebar-label">
       <div class="flex items-end gap-0">
         <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
         <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
@@ -35,37 +50,40 @@
     <button class="md:hidden p-1 text-light hover:text-white" onclick="closeSidebar()">
       <span class="material-symbols-outlined">close</span>
     </button>
+    <button id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()" class="hidden md:flex items-center justify-center absolute -right-3 top-7 w-6 h-6 rounded-full bg-amber text-white shadow-card hover:bg-amber-hover z-10" title="Collapse sidebar">
+      <span class="material-symbols-outlined" style="font-size:16px">chevron_left</span>
+    </button>
   </div>
   <nav class="flex-1 mt-2 sidebar-scrollbar overflow-y-auto" id="sidebar-nav">
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-page="dashboard">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-page="dashboard" title="Dashboard">
       <span class="material-symbols-outlined text-amber">dashboard</span>
-      <span class="text-sm font-medium">Dashboard</span>
+      <span class="sidebar-label text-sm font-medium">Dashboard</span>
     </a>
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="pg-locations">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="pg-locations" title="PG Locations">
       <span class="material-symbols-outlined">location_city</span>
-      <span class="text-sm font-medium">PG Locations</span>
+      <span class="sidebar-label text-sm font-medium">PG Locations</span>
     </a>
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="admins">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="admins" title="Admins">
       <span class="material-symbols-outlined">admin_panel_settings</span>
-      <span class="text-sm font-medium">Admins</span>
+      <span class="sidebar-label text-sm font-medium">Admins</span>
     </a>
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="tenants">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="tenants" title="All Tenants">
       <span class="material-symbols-outlined">groups</span>
-      <span class="text-sm font-medium">All Tenants</span>
+      <span class="sidebar-label text-sm font-medium">All Tenants</span>
     </a>
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="payments">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="payments" title="Payments">
       <span class="material-symbols-outlined">payments</span>
-      <span class="text-sm font-medium">Payments</span>
+      <span class="sidebar-label text-sm font-medium">Payments</span>
     </a>
-    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="onboarding">
+    <a class="flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-page="onboarding" title="Onboarding">
       <span class="material-symbols-outlined">person_add</span>
-      <span class="text-sm font-medium">Onboarding</span>
+      <span class="sidebar-label text-sm font-medium">Onboarding</span>
     </a>
   </nav>
   <div class="p-4 border-t border-charcoal">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm" id="user-avatar">SA</div>
-      <div>
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm flex-shrink-0" id="user-avatar">SA</div>
+      <div class="sidebar-label">
         <p class="text-sm font-bold text-white" id="user-name">Super Admin</p>
         <button onclick="api.logout()" class="text-[10px] tracking-wider uppercase text-light hover:text-amber transition-colors">Logout</button>
       </div>
@@ -77,7 +95,7 @@
 <div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-[35] hidden" onclick="closeSidebar()"></div>
 
 <!-- Top Header -->
-<header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
+<header id="header" class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
   <div class="flex items-center gap-3">
     <button class="md:hidden p-2 text-dark" onclick="toggleSidebar()">
       <span class="material-symbols-outlined">menu</span>
@@ -126,6 +144,17 @@
     document.getElementById('sidebar').classList.add('hidden');
     document.getElementById('sidebar-overlay').classList.add('hidden');
   }
+
+  // Desktop sidebar minimize/expand (persisted per browser)
+  function toggleSidebarCollapse() {
+    const collapsed = !document.documentElement.classList.contains('sidebar-collapsed');
+    document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
+    localStorage.setItem('pga1_sidebar_collapsed', collapsed ? '1' : '0');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (btn) btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  }
+  document.getElementById('sidebar-toggle-btn').title =
+    document.documentElement.classList.contains('sidebar-collapsed') ? 'Expand sidebar' : 'Collapse sidebar';
 
   // ─── Navigation ───────────────────────────────────────────────
   let currentSection = 'dashboard';

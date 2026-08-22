@@ -18,14 +18,27 @@
       }}
     }
   </script>
-  <style>body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}</style>
+  <style>
+    body{font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+    #sidebar,#main,#header{transition:width .18s ease,margin-left .18s ease,left .18s ease}
+    html.sidebar-collapsed #sidebar{width:5rem}
+    html.sidebar-collapsed #sidebar .sidebar-label{display:none}
+    html.sidebar-collapsed #sidebar .nav-link{justify-content:center;gap:0}
+    html.sidebar-collapsed #sidebar-toggle-btn{transform:rotate(180deg)}
+    @media (min-width:768px){
+      html.sidebar-collapsed #main{margin-left:5rem}
+      html.sidebar-collapsed #header{left:5rem}
+    }
+  </style>
 </head>
 <body class="bg-cream text-charcoal">
+<script>document.documentElement.classList.toggle('sidebar-collapsed', localStorage.getItem('pga1_sidebar_collapsed') === '1');</script>
 
 <!-- Sidebar -->
 <aside id="sidebar" class="fixed h-screen w-60 left-0 top-0 bg-dark flex flex-col z-40 hidden md:flex">
-  <div class="p-6 flex items-start justify-between">
-    <div>
+  <div class="p-6 flex items-start justify-between relative">
+    <div class="sidebar-label">
       <div class="flex items-end gap-0">
         <span class="font-brand text-lg font-bold text-white">PG&nbsp;A</span>
         <span class="font-brand text-3xl font-black text-amber leading-[0.82]">1</span>
@@ -35,39 +48,42 @@
     <button class="md:hidden p-1 text-light hover:text-white" onclick="closeSidebar()">
       <span class="material-symbols-outlined">close</span>
     </button>
+    <button id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()" class="hidden md:flex items-center justify-center absolute -right-3 top-7 w-6 h-6 rounded-full bg-amber text-white shadow-card hover:bg-amber-hover z-10" title="Collapse sidebar">
+      <span class="material-symbols-outlined" style="font-size:16px">chevron_left</span>
+    </button>
   </div>
   <nav class="flex-1 mt-2">
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-section="dashboard">
-      <span class="material-symbols-outlined text-amber">dashboard</span><span class="text-sm font-medium">Dashboard</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-amber text-white bg-charcoal" data-section="dashboard" title="Dashboard">
+      <span class="material-symbols-outlined text-amber">dashboard</span><span class="sidebar-label text-sm font-medium">Dashboard</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="tenants">
-      <span class="material-symbols-outlined">groups</span><span class="text-sm font-medium">Tenants</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="tenants" title="Tenants">
+      <span class="material-symbols-outlined">groups</span><span class="sidebar-label text-sm font-medium">Tenants</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="rooms">
-      <span class="material-symbols-outlined">bed</span><span class="text-sm font-medium">Rooms & Beds</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="rooms" title="Rooms & Beds">
+      <span class="material-symbols-outlined">bed</span><span class="sidebar-label text-sm font-medium">Rooms & Beds</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="payments">
-      <span class="material-symbols-outlined">payments</span><span class="text-sm font-medium">Payments</span>
-      <span id="payment-badge" class="ml-auto text-[10px] bg-danger text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="payments" title="Payments">
+      <span class="material-symbols-outlined">payments</span><span class="sidebar-label text-sm font-medium">Payments</span>
+      <span id="payment-badge" class="sidebar-label ml-auto text-[10px] bg-danger text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="onboarding">
-      <span class="material-symbols-outlined">person_add</span><span class="text-sm font-medium">Onboarding</span>
-      <span id="onboarding-badge" class="ml-auto text-[10px] bg-amber text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="onboarding" title="Onboarding">
+      <span class="material-symbols-outlined">person_add</span><span class="sidebar-label text-sm font-medium">Onboarding</span>
+      <span id="onboarding-badge" class="sidebar-label ml-auto text-[10px] bg-amber text-white px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="notes">
-      <span class="material-symbols-outlined">sticky_note_2</span><span class="text-sm font-medium">Notes</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="notes" title="Notes">
+      <span class="material-symbols-outlined">sticky_note_2</span><span class="sidebar-label text-sm font-medium">Notes</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="expenses">
-      <span class="material-symbols-outlined">account_balance_wallet</span><span class="text-sm font-medium">Expenses</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="expenses" title="Expenses">
+      <span class="material-symbols-outlined">account_balance_wallet</span><span class="sidebar-label text-sm font-medium">Expenses</span>
     </a>
-    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="electricity">
-      <span class="material-symbols-outlined">electric_bolt</span><span class="text-sm font-medium">Electricity</span>
+    <a class="nav-link flex items-center gap-3 px-5 py-3 border-l-4 border-transparent text-light hover:text-white hover:bg-charcoal cursor-pointer transition-colors" data-section="electricity" title="Electricity">
+      <span class="material-symbols-outlined">electric_bolt</span><span class="sidebar-label text-sm font-medium">Electricity</span>
     </a>
   </nav>
   <div class="p-4 border-t border-charcoal">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm" id="sidebar-avatar">A</div>
-      <div>
+      <div class="w-10 h-10 rounded-full bg-amber flex items-center justify-center text-white font-bold text-sm flex-shrink-0" id="sidebar-avatar">A</div>
+      <div class="sidebar-label">
         <p class="text-sm font-bold text-white" id="sidebar-name">Admin</p>
         <button onclick="api.logout()" class="text-[10px] tracking-wider uppercase text-light hover:text-amber">Logout</button>
       </div>
@@ -79,7 +95,7 @@
 <div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-[35] hidden" onclick="closeSidebar()"></div>
 
 <!-- Header -->
-<header class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
+<header id="header" class="fixed top-0 right-0 md:left-60 left-0 h-16 bg-white border-b border-sand shadow-sm flex justify-between items-center px-4 md:px-6 z-30">
   <div class="flex items-center gap-3">
     <button class="md:hidden p-2" onclick="toggleSidebar()">
       <span class="material-symbols-outlined text-dark">menu</span>
@@ -158,6 +174,17 @@ function closeSidebar() {
   document.getElementById('sidebar').classList.add('hidden');
   document.getElementById('sidebar-overlay').classList.add('hidden');
 }
+
+// Desktop sidebar minimize/expand (persisted per browser)
+function toggleSidebarCollapse() {
+  const collapsed = !document.documentElement.classList.contains('sidebar-collapsed');
+  document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
+  localStorage.setItem('pga1_sidebar_collapsed', collapsed ? '1' : '0');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (btn) btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+}
+document.getElementById('sidebar-toggle-btn').title =
+  document.documentElement.classList.contains('sidebar-collapsed') ? 'Expand sidebar' : 'Collapse sidebar';
 
 // Nav links
 document.querySelectorAll('.nav-link').forEach(link => {
