@@ -54,7 +54,7 @@
   </a>
 </nav>
 
-<script src="js/api.js"></script>
+<script src="js/api.js?v=3"></script>
 <script>
 // Handle impersonation mode — use impersonate token if available
 (function() {
@@ -114,7 +114,8 @@ function firstPaymentRow(label, refTag, expectedAmt, payments, rentId) {
   const s = summarizeFirstPaymentBucket(payments, expectedAmt);
 
   if (s.fullyPaid) {
-    return `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">${label}</p><p class="text-[10px] text-mid">₹${s.verifiedTotal.toLocaleString('en-IN')}</p></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-success bg-success-bg">Verified</span></div>`;
+    const receiptBtns = payments.filter(p => p.status === 'verified').map(p => `<button onclick="api.downloadReceipt(${p.id}).catch(()=>alert('Receipt not available'))" class="text-[10px] font-bold text-amber underline ml-2">Receipt</button>`).join('');
+    return `<div class="flex items-center justify-between p-3 bg-cream rounded-xl mb-2"><div><p class="text-xs font-bold text-dark">${label}</p><p class="text-[10px] text-mid">₹${s.verifiedTotal.toLocaleString('en-IN')}</p></div><div class="flex items-center">${receiptBtns}<span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-success bg-success-bg ml-2">Verified</span></div></div>`;
   }
   if (s.verifiedTotal > 0) {
     return `<div class="p-3 bg-warm rounded-xl mb-2">
@@ -354,7 +355,7 @@ async function renderHome() {
           const fpClass = fp.status === 'verified' ? 'text-success bg-success-bg' : fp.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm';
           return `<div class="bg-white p-4 rounded-2xl border-2 ${fp.status === 'verified' ? 'border-success' : 'border-amber'} shadow-card mb-5">
             <div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">${fp.status === 'verified' ? 'check_circle' : 'hourglass_top'}</span><p class="text-[10px] font-semibold tracking-widest uppercase ${fp.status === 'verified' ? 'text-success' : 'text-amber'}">First Payment</p></div>
-            ${fps.map(p => `<div class="flex items-center justify-between mb-1"><p class="text-xs font-bold text-dark">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'verified' ? 'text-success bg-success-bg' : p.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'}">${p.status === 'verified' ? 'Verified' : p.status === 'rejected' ? 'Rejected' : 'Pending'}</span></div>`).join('')}
+            ${fps.map(p => `<div class="flex items-center justify-between mb-1"><p class="text-xs font-bold text-dark">₹${parseInt(p.claimed_amount).toLocaleString('en-IN')} via ${p.payment_method}</p><div class="flex items-center gap-2">${p.status === 'verified' ? `<button onclick="api.downloadReceipt(${p.id}).catch(()=>alert('Receipt not available'))" class="text-[10px] font-bold text-amber underline">Receipt</button>` : ''}<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.status === 'verified' ? 'text-success bg-success-bg' : p.status === 'rejected' ? 'text-danger bg-danger-bg' : 'text-amber bg-warm'}">${p.status === 'verified' ? 'Verified' : p.status === 'rejected' ? 'Rejected' : 'Pending'}</span></div></div>`).join('')}
           </div>`;
         }
 
@@ -450,6 +451,8 @@ async function renderRents() {
               // Check if payment is pending verification
               const pendingPayment = (rent.payment_submissions || []).find(ps => ps.status === 'verification_pending' || ps.status === 'submitted');
               const rejectedPayment = (rent.payment_submissions || []).find(ps => ps.status === 'rejected');
+              const verifiedSubs = (rent.payment_submissions || []).filter(ps => ps.status === 'verified');
+              const receiptBtns = verifiedSubs.map(ps => `<button onclick="api.downloadReceipt(${ps.id}).catch(()=>alert('Receipt not available'))" class="text-[10px] font-bold text-amber underline">Receipt${verifiedSubs.length > 1 ? ' ₹' + parseInt(ps.verified_amount ?? ps.claimed_amount).toLocaleString('en-IN') : ''}</button>`).join('');
 
               return `
               <div class="bg-white p-4 rounded-2xl border border-sand shadow-card ${isPaid ? 'opacity-90' : ''}">
@@ -471,9 +474,10 @@ async function renderRents() {
                   ${rent.status === 'partially_paid' ? `<div class="flex justify-between"><span class="text-[10px] text-amber font-semibold">Remaining Due</span><span class="text-xs font-bold text-amber">₹${remainingDue.toLocaleString('en-IN')}</span></div>` : ''}
                 </div>
                 ${isPaid ? `
-                <div class="w-full bg-success-bg text-success py-2 rounded-lg text-[11px] font-bold text-center">
+                <div class="w-full bg-success-bg text-success py-2 rounded-lg text-[11px] font-bold text-center mb-1">
                   <span class="material-symbols-outlined text-sm align-middle">check_circle</span> Paid
-                </div>` : pendingPayment ? `
+                </div>
+                <div class="flex flex-wrap gap-2 justify-center">${receiptBtns}</div>` : pendingPayment ? `
                 <div class="w-full bg-warm text-amber py-2 rounded-lg text-[11px] font-bold text-center">
                   <span class="material-symbols-outlined text-sm align-middle">hourglass_top</span> Verification Pending
                 </div>` : rejectedPayment ? `

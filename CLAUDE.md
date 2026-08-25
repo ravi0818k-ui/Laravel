@@ -38,7 +38,7 @@ php artisan cache:clear
 php artisan route:clear
 ```
 
-App runs at `http://127.0.0.1:8000`. Dashboards: `/dashboard/login.html`, `/dashboard/admin.html`, `/dashboard/super-admin.html`, `/dashboard/tenant.html`. Default super admin: mobile `9999999999` / password `admin123`.
+App runs at `http://127.0.0.1:8000`. Dashboards: `/dashboard/login`, `/dashboard/admin`, `/dashboard/super-admin`, `/dashboard/tenant` (extensionless; a `routes/web.php` route whitelists these four page names and serves the matching `.html` file from `public/dashboard/` via `file_get_contents` — the `.html` URLs still work too, but `api.js` redirects/links using the extensionless form, so keep new pages added to the same whitelist array if you add one). Default super admin: mobile `9999999999` / password `admin123`.
 
 ### Why `php -c php-server.ini artisan serve` doesn't work (and file uploads fail with it)
 
@@ -96,6 +96,8 @@ Core chain: `PgLocation` → `Room` → `Bed` → `TenantBedAllocation` → `Ten
 
 Money flow: `MonthlyRent` (per tenant per month) accumulates `base_rent` + `additional_charge` (e.g. merged-in electricity) − `discount` = `total_amount`; `PaymentSubmission` records tenant-submitted proof (screenshot) or cash, verified by an admin (`verify`/`reject` endpoints), which updates `paid_amount`/`due_amount`/`status` on the `MonthlyRent`. Some `PaymentSubmission` rows have a null `monthly_rent_id` (e.g. first payment covering rent + security deposit before a rent record exists) — this is expected, not a data bug.
 
+Verifying a payment (`RentService`) also stamps a unique `receipt_number` (`PGA1-YYYYMM-00001`, zero-padded on the `PaymentSubmission` id) onto the row. Once verified, the tenant can fetch a PDF via `GET /api/v1/tenant/payments/{payment}/receipt` (`PaymentController::receipt`), rendered with `barryvdh/laravel-dompdf` from `resources/views/receipts/payment.blade.php`; the dashboard's `api.downloadReceipt()` fetches it as a blob and triggers a client-side download rather than navigating directly (the endpoint requires the `Authorization` bearer header, so a plain link/`<a href>` won't work).
+
 Electricity: `ElectricityBill` (per room per month, with meter images) splits into one `ElectricityBillAllocation` per active tenant in that room; allocations can later be merged into a tenant's `MonthlyRent.additional_charge`.
 
 Onboarding: `OnboardingInvitation` has a `link_type` of `bulk` / `single` / `existing` (existing-tenant re-verification links serve `verification.html` instead of `onboarding.html`, see `routes/web.php`). Candidate submits via public token-based routes, uploads go to `storage/app/onboarding/{id}/` as `TenantDocument` rows, and admin approval creates the `User` + `Tenant` + bed allocation in one step.
@@ -132,5 +134,6 @@ Deployed to Serverbyt shared hosting (domain `pga1gurgaon.in`). No SSH/composer 
 - The DB host is a specific Serverbyt/StackCP hostname from the panel (e.g. `sdb-81.hosting.stackcp.net`), never `localhost`.
 - Dashboard/website JS must never hardcode `127.0.0.1` — always go through the `API_BASE` auto-detect pattern (see Frontend dashboards above). A past incident: `admin.html` had two hardcoded `http://127.0.0.1:8000/...` document-preview URLs that broke in production; fixed by routing through `API_BASE`. Grep for `127.0.0.1` in dashboard HTML/JS before deploying if touching those files.
 - If exporting the DB from Windows PowerShell for manual import via phpMyAdmin, use `mysqldump ... --result-file=path.sql` rather than `>` redirection — PowerShell's default UTF-16 output on `>` corrupts the SQL file on import.
+- `config/dompdf.php` explicitly sets `'public_path' => public_path()`. Left on its default, dompdf resolves its own asset base path via `base_path('public')`, which doesn't exist under the `~/pga1/` + `~/public_html/` sibling layout above and throws "Cannot resolve public path" in production — dompdf must be told to reuse the same `usePublicPath()` override `index.php` already sets, not left to find `public/` on its own.
 
 See `SERVERBYT-DEPLOYMENT-GUIDE.md` (clean step-by-step reference) and `serverByteSetup.md` (the actual dated deployment log, with real hostnames/paths and a "Problems Encountered & Fixes" section) in the repo root for full procedure and history — consult these before changing anything touching `public_html`, `.htaccess`, `index.php`, or `config/cors.php`.

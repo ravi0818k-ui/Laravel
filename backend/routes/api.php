@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/electricity', [TenantController::class, 'electricity']);
             Route::get('/electricity/{bill}/meter-image/{type}', [\App\Http\Controllers\Api\ElectricityController::class, 'viewMeterImage']);
             Route::post('/payments', [PaymentController::class, 'tenantSubmit']);
+            Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt']);
         });
 
         // ─── Admin Routes ───────────────────────────────────────

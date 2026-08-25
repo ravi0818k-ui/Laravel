@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentSubmission;
 use App\Services\RentService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -122,6 +123,30 @@ class PaymentController extends Controller
             'message' => 'Payment rejected.',
             'payment' => $payment->fresh(),
         ]);
+    }
+
+    /**
+     * Tenant: download the PDF receipt for one of their own verified payments.
+     */
+    public function receipt(Request $request, PaymentSubmission $payment)
+    {
+        $tenant = $request->user()->tenant;
+
+        if (!$tenant || $payment->tenant_id !== $tenant->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($payment->status !== 'verified') {
+            return response()->json(['message' => 'Receipt not available until payment is verified.'], 422);
+        }
+
+        $payment->load(['tenant.user', 'tenant.pgLocation', 'monthlyRent', 'verifiedByUser']);
+
+        $pdf = Pdf::loadView('receipts.payment', ['payment' => $payment]);
+
+        return response($pdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="Receipt-' . $payment->receipt_number . '.pdf"');
     }
 
     /**

@@ -71,6 +71,7 @@ class RentService
             'status' => 'verified',
             'verified_by' => $verifiedBy,
             'verified_at' => now(),
+            'receipt_number' => 'PGA1-' . now()->format('Ym') . '-' . str_pad($payment->id, 5, '0', STR_PAD_LEFT),
         ]);
 
         if ($payment->monthlyRent) {

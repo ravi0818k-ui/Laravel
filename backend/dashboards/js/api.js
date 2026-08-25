@@ -302,6 +302,22 @@ const api = {
     return this.upload('/tenant/payments', formData);
   },
 
+  async downloadReceipt(paymentId, filename) {
+    const resp = await fetch(`${API_BASE}/tenant/payments/${paymentId}/receipt`, {
+      headers: { 'Authorization': `Bearer ${this.getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Receipt not available');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `Receipt-${paymentId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   // ─── Public ───────────────────────────────────────────────────
   async publicPgLocations() {
     return this.request('GET', '/public/pg-locations');

@@ -21,6 +21,7 @@ class PaymentSubmission extends Model
         'rejection_reason',
         'verified_by',
         'verified_at',
+        'receipt_number',
         'payment_date',
         'notes',
     ];

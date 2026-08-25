@@ -19,6 +19,14 @@ Route::get('/', function () {
     ]);
 });
 
+// Serve dashboard pages without the .html extension (e.g. /dashboard/admin)
+Route::get('/dashboard/{page}', function ($page) {
+    if (!in_array($page, ['login', 'admin', 'super-admin', 'tenant'])) {
+        abort(404);
+    }
+    return file_get_contents(public_path("dashboard/{$page}.html"));
+})->where('page', '[a-z-]+');
+
 // Serve onboarding form page for candidates
 Route::get('/onboarding/{token}', function ($token) {
     // Check if this is an existing tenant verification link

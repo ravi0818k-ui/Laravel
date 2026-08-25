@@ -50,7 +50,7 @@ const api = {
 
     if (response.status === 401) {
       this.clearAuth();
-      window.location.href = 'login.html';
+      window.location.href = 'login';
       return null;
     }
 
@@ -95,7 +95,7 @@ const api = {
   async logout() {
     try { await this.post('/logout'); } catch (e) {}
     this.clearAuth();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
   },
 
   async me() {
@@ -302,6 +302,22 @@ const api = {
     return this.upload('/tenant/payments', formData);
   },
 
+  async downloadReceipt(paymentId, filename) {
+    const resp = await fetch(`${API_BASE}/tenant/payments/${paymentId}/receipt`, {
+      headers: { 'Authorization': `Bearer ${this.getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Receipt not available');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `Receipt-${paymentId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   // ─── Public ───────────────────────────────────────────────────
   async publicPgLocations() {
     return this.request('GET', '/public/pg-locations');
@@ -311,13 +327,13 @@ const api = {
 // ─── Auth Guard ─────────────────────────────────────────────────
 function requireAuth(allowedRoles = []) {
   if (!api.isLoggedIn()) {
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     return false;
   }
   const user = api.getUser();
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     alert('Access denied. Insufficient permissions.');
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     return false;
   }
   return true;
@@ -328,8 +344,8 @@ function redirectToDashboard() {
   const user = api.getUser();
   if (!user) return;
   switch (user.role) {
-    case 'super_admin': window.location.href = 'super-admin.html'; break;
-    case 'admin': window.location.href = 'admin.html'; break;
-    case 'tenant': window.location.href = 'tenant.html'; break;
+    case 'super_admin': window.location.href = 'super-admin'; break;
+    case 'admin': window.location.href = 'admin'; break;
+    case 'tenant': window.location.href = 'tenant'; break;
   }
 }

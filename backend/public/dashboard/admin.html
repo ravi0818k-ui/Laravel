@@ -116,8 +116,8 @@
   <a onclick="showSection('rooms')" class="flex flex-col items-center gap-0.5 text-mid"><span class="material-symbols-outlined">bed</span><span class="text-[10px] font-semibold">Rooms</span></a>
 </nav>
 
-<script src="js/api.js?v=2"></script>
-<script src="js/modal.js?v=2"></script>
+<script src="js/api.js?v=3"></script>
+<script src="js/modal.js?v=3"></script>
 <script>
 if (!requireAuth(['admin','super_admin'])) throw new Error('Unauthorized');
 
@@ -679,7 +679,7 @@ async function impersonateTenant(tenantId) {
     localStorage.setItem('pga1_impersonate_user', JSON.stringify(result.user));
 
     // Open tenant dashboard in new tab (it will detect impersonation mode)
-    window.open('tenant.html?impersonate=1', '_blank');
+    window.open('tenant?impersonate=1', '_blank');
 
     closeModal();
     showToast(`Opened ${result.user.name}'s dashboard in new tab`);
