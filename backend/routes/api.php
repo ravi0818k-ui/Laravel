@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('admin')->middleware('role:admin,super_admin')->group(function () {
             // Tenants
             Route::get('/tenants', [AdminTenantController::class, 'index']);
+            Route::get('/tenants/export', [AdminTenantController::class, 'export']);
             Route::get('/tenants/trash', [AdminTenantController::class, 'trash']);
             Route::get('/tenants/{tenant}', [AdminTenantController::class, 'show']);
             Route::delete('/tenants/{tenant}', [AdminTenantController::class, 'destroy']);

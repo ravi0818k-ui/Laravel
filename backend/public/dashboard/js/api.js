@@ -140,6 +140,22 @@ const api = {
     return this.request('DELETE', `/admin/tenants/${tenantId}`);
   },
 
+  async exportTenants(params = '') {
+    const resp = await fetch(`${API_BASE}/admin/tenants/export${params ? '?' + params : ''}`, {
+      headers: { 'Authorization': `Bearer ${this.getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Export failed');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tenants-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   async restoreTenant(tenantId) {
     return this.post(`/admin/tenants/${tenantId}/restore`);
   },

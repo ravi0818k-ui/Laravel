@@ -8,6 +8,7 @@ use App\Services\RentService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminTenantController extends Controller
 {
@@ -46,6 +47,76 @@ class AdminTenantController extends Controller
         });
 
         return response()->json(['tenants' => $tenants]);
+    }
+
+    /**
+     * Admin: export tenants report as CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $user = $request->user();
+        $query = Tenant::with([
+            'user',
+            'currentBedAllocation.bed.room',
+            'bedAllocations' => fn ($q) => $q->latest('id')->with('bed.room'),
+            'monthlyRents' => fn ($q) => $q->latest('billing_month')->with([
+                'paymentSubmissions' => fn ($q2) => $q2->where('status', 'verified')->latest('payment_date'),
+            ]),
+        ]);
+
+        if ($user->isAdmin()) {
+            $assignedPgIds = $user->assignedPgLocations()->pluck('pg_locations.id');
+            $query->whereIn('pg_location_id', $assignedPgIds);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('pg_location_id')) {
+            $query->where('pg_location_id', $request->pg_location_id);
+        }
+
+        $tenants = $query->orderByDesc('created_at')->get();
+
+        $columns = [
+            'Name', 'Tenant ID', 'Room No', 'Mobile Number', 'Parent Mobile Number',
+            'Date of Onboarding', 'Date of Offboarding', 'Payment Due Date', 'Payment Date',
+        ];
+
+        $callback = function () use ($tenants, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($tenants as $tenant) {
+                $room = $tenant->currentBedAllocation?->bed?->room?->room_number
+                    ?? $tenant->bedAllocations->first()?->bed?->room?->room_number;
+
+                $latestRent = $tenant->monthlyRents->first();
+                $paymentDate = $latestRent?->paymentSubmissions->first()?->payment_date;
+
+                fputcsv($file, [
+                    $tenant->user->name ?? '',
+                    $tenant->tenant_id,
+                    $room ?? '',
+                    $tenant->user->mobile ?? '',
+                    $tenant->parent_mobile ?? '',
+                    optional($tenant->joining_date)->format('Y-m-d'),
+                    optional($tenant->offboarded_at)->format('Y-m-d'),
+                    optional($latestRent?->due_date)->format('Y-m-d'),
+                    optional($paymentDate)->format('Y-m-d'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        $filename = 'tenants-report-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
     }
 
     /**

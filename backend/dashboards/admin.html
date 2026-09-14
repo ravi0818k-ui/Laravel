@@ -164,6 +164,7 @@ document.getElementById('sidebar-avatar').textContent = user.name.substring(0,2)
 
 let pgLocations = [];
 let currentPgId = null;
+let currentSection = 'dashboard';
 
 // Nav links
 // Mobile sidebar drawer
@@ -226,10 +227,11 @@ async function init() {
 function switchPg() {
   const val = document.getElementById('pg-selector').value;
   currentPgId = val ? parseInt(val) : null;
-  showSection('dashboard');
+  showSection(currentSection);
 }
 
 async function showSection(section) {
+  currentSection = section;
   const main = document.getElementById('main');
   main.innerHTML = '<div class="flex justify-center py-12"><span class="material-symbols-outlined text-3xl text-amber animate-spin">progress_activity</span></div>';
 
@@ -318,6 +320,21 @@ async function renderAdminDashboard() {
     </div>`;
 }
 
+async function exportTenantsReport() {
+  const btn = document.getElementById('export-tenants-btn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>Exporting...';
+  try {
+    await api.exportTenants(currentPgId ? `pg_location_id=${currentPgId}` : '');
+  } catch (err) {
+    alert('Failed to export tenants report. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
 async function renderTenants() {
   const data = await api.adminTenants(currentPgId ? `pg_location_id=${currentPgId}` : '');
   const tenants = data.tenants || [];
@@ -326,6 +343,9 @@ async function renderTenants() {
     <div class="flex flex-wrap justify-between items-center gap-3 mb-4 sticky top-16 bg-cream z-10 py-3 -mx-4 px-4 md:-mx-6 md:px-6">
       <h2 class="font-display text-2xl font-black text-dark">Tenants</h2>
       <div class="flex gap-2 flex-wrap">
+        <button onclick="exportTenantsReport()" id="export-tenants-btn" class="border border-dark text-dark px-3 py-2 rounded-lg text-xs font-bold hover:bg-dark hover:text-white transition-all flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">download</span>Export Excel
+        </button>
         <button onclick="showTrash()" class="border border-danger text-danger px-3 py-2 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition-all flex items-center gap-1">
           <span class="material-symbols-outlined text-sm">delete</span>Trash
         </button>
